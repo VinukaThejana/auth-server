@@ -28,6 +28,7 @@ type Env struct {
 	RefreshTokenExpires    time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN" validate:"required"`
 	RefreshTokenMaxAge     int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required"`
 	DBPort                 int           `mapstructure:"POSTGRES_PORT" validate:"required,min=1,max=65535"`
+	DevEnv                 string        `mapstructure:"DEV_ENV" validate:"required,oneof=PROD DEV TEST"`
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
