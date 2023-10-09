@@ -10,4 +10,5 @@ import (
 type Connector struct {
 	DB         *gorm.DB
 	Ratelimter *redis.Storage
+	R          *Redis
 }
