@@ -15,9 +15,9 @@ start:
 run argv="@":
   #!/usr/bin/env bash
   set -euxo pipefail
-  if [[ {{ argv }} == "migrations" ]]
+  if [[ {{ argv }} == "migrate" ]]
   then
-    go run cmd/main.go -migrations
+    go run cmd/main.go -migrate
   else
     go run cmd/main.go
   fi
