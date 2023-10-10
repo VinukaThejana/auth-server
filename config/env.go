@@ -9,29 +9,24 @@ import (
 
 // Env is structure containing env variables
 type Env struct {
-	RedisEmailURL            string        `mapstructure:"REDIS_EMAIL_URL" validate:"required"`
-	ResendAPIKey             string        `mapstructure:"RESEND_API_KEY" validate:"required"`
-	DBHost                   string        `mapstructure:"POSTGRES_HOST" validate:"required"`
-	DBPassword               string        `mapstructure:"POSTGRES_PASSWORD" validate:"required"`
-	DBName                   string        `mapstructure:"POSTGRES_DB" validate:"required"`
+	Port                     string        `mapstructure:"PORT" validate:"required,numeric"`
+	DevEnv                   string        `mapstructure:"DEV_ENV" validate:"required,oneof=DEV PROD TEST"`
 	DSN                      string        `mapstructure:"DATABASE_URL" validate:"required"`
-	RedisSessionURL          string        `mapstructure:"REDIS_SESSION_URL" validate:"required"`
-	RedisRatelimiterUsername string        `mapstructure:"REDIS_RATELIMITER_USERNAME" validate:""`
-	RedisRatelimiterPassword string        `mapstructure:"REDIS_RATELIMITER_PASSWORD" validate:""`
+	RedisRatelimiterUsername string        `mapstructure:"REDIS_RATELIMITER_USERNAME"`
+	RedisRatelimiterPassword string        `mapstructure:"REDIS_RATELIMITER_PASSWORD"`
 	RedisRatelimiterHost     string        `mapstructure:"REDIS_RATELIMITER_HOST" validate:"required"`
-	DBUser                   string        `mapstructure:"POSTGRES_USER" validate:"required,min=3,max=15"`
-	Port                     string        `mapstructure:"PORT" validate:"required"`
-	AccessTokenPublicKey     string        `mapstructure:"ACCESS_TOKEN_PUBLIC_KEY" validate:"required"`
+	RedisRatelimiterPort     int           `mapstructure:"REDIS_RATELIMITER_PORT" validate:"required,number"`
+	RedisSessionURL          string        `mapstructure:"REDIS_SESSION_URL" validate:"required,uri"`
+	RedisEmailURL            string        `mapstructure:"REDIS_EMAIL_URL" validate:"required,uri"`
 	AccessTokenPrivateKey    string        `mapstructure:"ACCESS_TOKEN_PRIVATE_KEY" validate:"required"`
-	RefreshTokenPublicKey    string        `mapstructure:"REFRESH_TOKEN_PUBLIC_KEY" validate:"required"`
+	AccessTokenPublicKey     string        `mapstructure:"ACCESS_TOKEN_PUBLIC_KEY" validate:"required"`
+	AccessTokenExpired       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`
+	AccessTokenMaxAge        int           `mapstructure:"ACCESS_TOKEN_MAXAGE" validate:"required,number"`
 	RefreshTokenPrivateKey   string        `mapstructure:"REFRESH_TOKEN_PRIVATE_KEY" validate:"required"`
-	AccessTokenMaxAge        int           `mapstructure:"ACCESS_TOKEN_MAXAGE" validate:"required"`
-	AccessTokenExpires       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`
+	RefreshTokenPublicKey    string        `mapstructure:"REFRESH_TOKEN_PUBLIC_KEY" validate:"required"`
 	RefreshTokenExpires      time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN" validate:"required"`
-	RefreshTokenMaxAge       int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required"`
-	DBPort                   int           `mapstructure:"POSTGRES_PORT" validate:"required,min=1,max=65535"`
-	RedisRatelimiterPort     int           `mapstructure:"REDIS_RATELIMITER_PORT" validate:"required"`
-	DevEnv                   string        `mapstructure:"DEV_ENV" validate:"required,oneof=PROD DEV TEST"`
+	RefreshTokenMaxAge       int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required,number"`
+	ResendAPIKey             string        `mapstructure:"RESEND_API_KEY" validate:"required"`
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
@@ -41,6 +36,11 @@ func (e *Env) Load() {
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
+	if err != nil {
+		logger.Errorf(err)
+	}
+
+	err = viper.Unmarshal(&e)
 	if err != nil {
 		logger.Errorf(err)
 	}
