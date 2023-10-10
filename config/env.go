@@ -27,6 +27,7 @@ type Env struct {
 	RefreshTokenExpires      time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN" validate:"required"`
 	RefreshTokenMaxAge       int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required,number"`
 	ResendAPIKey             string        `mapstructure:"RESEND_API_KEY" validate:"required"`
+	FrontendHostname         string        `mapstructure:"FRONTEND_HOSTNAME" validate:"required,hostname"`
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
