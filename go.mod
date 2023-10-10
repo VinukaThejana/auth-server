@@ -27,8 +27,10 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/redis/go-redis/v9 v9.0.2 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.49.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
@@ -36,7 +38,7 @@ require (
 )
 
 require (
-	github.com/VinukaThejana/go-utils/logger v0.0.0-20231008174847-6fc39783774c
+	github.com/VinukaThejana/go-utils/logger v0.0.0-20231010151516-95967db66c53
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gofiber/fiber/v2 v2.49.2
 	github.com/gofiber/storage/redis v1.3.4
