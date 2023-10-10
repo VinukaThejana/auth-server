@@ -30,8 +30,16 @@ services:
       - '6381:6379'
     volumes:
       - auth_redis_email_db:/data
+  redis_system:
+    image: redis:alpine
+    container_name: redis_system
+    ports:
+      - '6382:6379'
+    volumes:
+      - auth_redis_system:/data
 volumes:
   auth_postgres_db:
   auth_redis_session_db:
   auth_redis_ratelimier_db:
   auth_redis_email_db:
+  auth_redis_system:

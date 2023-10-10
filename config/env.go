@@ -18,6 +18,7 @@ type Env struct {
 	RedisRatelimiterPort     int           `mapstructure:"REDIS_RATELIMITER_PORT" validate:"required,number"`
 	RedisSessionURL          string        `mapstructure:"REDIS_SESSION_URL" validate:"required,uri"`
 	RedisEmailURL            string        `mapstructure:"REDIS_EMAIL_URL" validate:"required,uri"`
+	RedisSystemURL           string        `mapstructure:"REDIS_SYSTEM_URL" validate:"required,uri"`
 	AccessTokenPrivateKey    string        `mapstructure:"ACCESS_TOKEN_PRIVATE_KEY" validate:"required"`
 	AccessTokenPublicKey     string        `mapstructure:"ACCESS_TOKEN_PUBLIC_KEY" validate:"required"`
 	AccessTokenExpired       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`

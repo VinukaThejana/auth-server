@@ -12,6 +12,7 @@ import (
 type Redis struct {
 	Session *redis.Client
 	Email   *redis.Client
+	System  *redis.Client
 }
 
 func connect(url string) *redis.Client {
@@ -33,5 +34,6 @@ func (c *Connector) InitRedis(env *config.Env) {
 	c.R = &Redis{
 		Session: connect(env.RedisSessionURL),
 		Email:   connect(env.RedisEmailURL),
+		System:  connect(env.RedisSystemURL),
 	}
 }
