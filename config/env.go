@@ -21,7 +21,7 @@ type Env struct {
 	RedisSystemURL           string        `mapstructure:"REDIS_SYSTEM_URL" validate:"required,uri"`
 	AccessTokenPrivateKey    string        `mapstructure:"ACCESS_TOKEN_PRIVATE_KEY" validate:"required"`
 	AccessTokenPublicKey     string        `mapstructure:"ACCESS_TOKEN_PUBLIC_KEY" validate:"required"`
-	AccessTokenExpired       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`
+	AccessTokenExpires       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`
 	AccessTokenMaxAge        int           `mapstructure:"ACCESS_TOKEN_MAXAGE" validate:"required,number"`
 	RefreshTokenPrivateKey   string        `mapstructure:"REFRESH_TOKEN_PRIVATE_KEY" validate:"required"`
 	RefreshTokenPublicKey    string        `mapstructure:"REFRESH_TOKEN_PUBLIC_KEY" validate:"required"`
