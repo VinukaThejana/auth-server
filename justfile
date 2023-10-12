@@ -5,7 +5,7 @@ default:
 
 # Connect with the database
 db:
-  usql $(echo $DATABASE_URL | sed 's/.\{7\}$//')
+  usql $(echo $DATABASE_URL)
 
 # Start the docker containers
 start:
