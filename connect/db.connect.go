@@ -35,6 +35,7 @@ func (c *Connector) MigrateSchemaChanges(env *config.Env) {
 
 	migrations := []interface{}{
 		models.User{},
+		models.Sessions{},
 		models.OTP{},
 		models.OAuth{},
 	}
