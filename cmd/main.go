@@ -7,6 +7,7 @@ import (
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
+	"github.com/VinukaThejana/auth/controllers"
 	"github.com/VinukaThejana/auth/utils"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/gofiber/fiber/v2"
@@ -19,6 +20,8 @@ import (
 var (
 	env  config.Env
 	conn connect.Connector
+
+	systemC controllers.System
 )
 
 func init() {
@@ -29,6 +32,10 @@ func init() {
 
 	conn.InitRatelimiter(&env)
 	conn.InitRedis(&env)
+
+	systemC = controllers.System{
+		Conn: &conn,
+	}
 }
 
 func main() {
@@ -63,6 +70,7 @@ func main() {
 		router.Get("/metrics", monitor.New(monitor.Config{
 			Title: "Monitor Auth",
 		}))
+		router.Get("/health", systemC.Health)
 	})
 
 	logger.Errorf(app.Listen(fmt.Sprintf(":%s", env.Port)))
