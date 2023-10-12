@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/VinukaThejana/auth/config"
+	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/go-utils/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -32,7 +33,11 @@ func (c *Connector) MigrateSchemaChanges(env *config.Env) {
 		os.Exit(0)
 	}
 
-	migrations := []interface{}{}
+	migrations := []interface{}{
+		models.User{},
+		models.OTP{},
+		models.OAuth{},
+	}
 	if len(migrations) == 0 {
 		logger.Error(fmt.Errorf(" ❌ No items to migrate ! "))
 		os.Exit(0)
