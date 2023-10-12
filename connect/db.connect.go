@@ -38,6 +38,8 @@ func (c *Connector) MigrateSchemaChanges(env *config.Env) {
 		os.Exit(0)
 	}
 
+	c.DB.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
+
 	err := c.DB.AutoMigrate(migrations...)
 	if err != nil {
 		logger.Errorf(err)
