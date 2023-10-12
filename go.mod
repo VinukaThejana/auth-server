@@ -44,6 +44,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gofiber/fiber/v2 v2.49.2
 	github.com/gofiber/storage/redis v1.3.4
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/magiconair/properties v1.8.7 // indirect
