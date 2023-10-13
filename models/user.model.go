@@ -11,6 +11,7 @@ type User struct {
 	ID               *uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key"`
 	CreateAt         *time.Time `gorm:"not null;default:now()"`
 	UpdatedAt        *time.Time `gorm:"not null;default:now()"`
+	Name             string     `gorm:"type:varchar(200);not null"`
 	Username         string     `gorm:"type:varchar(150);uniqueIndex;not null"`
 	Email            string     `gorm:"type:varchar(255);uniqueIndex;default:null"`
 	OAuthConnections []OAuth    `gorm:"foreignKey:UserID"`
