@@ -3,18 +3,14 @@ package utils
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
-	"github.com/VinukaThejana/auth/errors"
-	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/templates"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/google/uuid"
 	"github.com/resendlabs/resend-go"
-	"gorm.io/gorm"
 )
 
 const (
@@ -58,49 +54,4 @@ func (e *Email) SendConfirmation(email string) {
 	}
 
 	logger.Log(fmt.Sprintf("[ %s ] : Confirmation email sent", send.Id))
-}
-
-// ConfirmEmail is a function that is used to verify the email address
-func (e *Email) ConfirmEmail(token string) error {
-	var user struct {
-		ID    string
-		Email string
-	}
-
-	_, err := uuid.Parse(token)
-	if err != nil {
-		return err
-	}
-
-	ctx := context.TODO()
-
-	val := e.Conn.R.Email.Get(ctx, token).Val()
-	if val == "" {
-		return errors.ErrEmailConfirmationExpired
-	}
-
-	var found bool
-	user.ID, user.Email, found = strings.Cut(val, "+")
-	if !found {
-		return errors.ErrUnauthorized
-	}
-
-	if user.ID != e.UserID.String() {
-		return errors.ErrUnauthorized
-	}
-
-	err = e.Conn.DB.Model(&models.User{}).Where(&models.User{
-		ID:    &e.UserID,
-		Email: user.Email,
-	}).Update("verified", true).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.ErrUnauthorized
-		}
-
-		return err
-	}
-
-	e.Conn.R.Email.Del(ctx, token)
-	return nil
 }
