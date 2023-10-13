@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 )
 
 // Username is a custom validation function that is used to validate the username
@@ -16,4 +17,13 @@ func Username(fl validator.FieldLevel) bool {
 
 	username := fl.Field().String()
 	return regex.MatchString(username)
+}
+
+// Password is custom validation function that is used to validate passwords
+func Password(fl validator.FieldLevel) bool {
+	const minEntropy = 60
+	password := fl.Field().String()
+
+	err := passwordvalidator.Validate(password, minEntropy)
+	return err == nil
 }
