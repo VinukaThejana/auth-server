@@ -13,6 +13,7 @@ import (
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
+	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -255,6 +256,34 @@ func Delete(
 		UserID: &userID,
 	}).Error
 	return err
+}
+
+// DeleteExpired is a function that is used to delete expired session tokens
+func DeleteExpired(conn *connect.Connector, userID uuid.UUID) {
+	now := time.Now().UTC().Unix()
+
+	var sessions []models.Sessions
+	err := conn.DB.Where("user_id = ? AND expires_at <= ?", userID.String(), now).Find(&sessions).Error
+	if err != nil {
+		logger.ErrorWithMsg(
+			err,
+			"Failed to delete expired tokens",
+		)
+		return
+	}
+
+	if len(sessions) == 0 {
+		return
+	}
+
+	err = conn.DB.Where("1 = 1").Delete(&sessions).Error
+	if err != nil {
+		logger.ErrorWithMsg(
+			err,
+			"Failed to delete expired tokens",
+		)
+		return
+	}
 }
 
 func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDetails *TokenDetails, metadata interface{}, err error) {
