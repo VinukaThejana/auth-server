@@ -57,7 +57,7 @@ func (e *Email) SendConfirmation(email string) {
 		return
 	}
 
-	logger.Log(fmt.Sprintf("Email sent with ID : %s", send.Id))
+	logger.Log(fmt.Sprintf("[ %s ] : Confirmation email sent", send.Id))
 }
 
 // ConfirmEmail is a function that is used to verify the email address
