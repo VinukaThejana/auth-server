@@ -19,4 +19,5 @@ type User struct {
 	OTPMethod        []OTP      `gorm:"foreignKey:UserID"`
 	Sessions         []Sessions `gorm:"foreignKey:UserID"`
 	TwoFactorEnabled bool       `gorm:"default:false"`
+	Verified         bool       `gorm:"default:false"`
 }
