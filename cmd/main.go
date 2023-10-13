@@ -22,6 +22,8 @@ var (
 	conn connect.Connector
 
 	systemC controllers.System
+	authC   controllers.Auth
+	emailC  controllers.Email
 )
 
 func init() {
@@ -35,6 +37,14 @@ func init() {
 
 	systemC = controllers.System{
 		Conn: &conn,
+	}
+	authC = controllers.Auth{
+		Conn: &conn,
+		Env:  &env,
+	}
+	emailC = controllers.Email{
+		Conn: &conn,
+		Env:  &env,
 	}
 }
 
@@ -71,6 +81,14 @@ func main() {
 			Title: "Monitor Auth",
 		}))
 		router.Get("/health", systemC.Health)
+	})
+
+	app.Route("/auth", func(router fiber.Router) {
+		router.Post("/register", authC.RegisterWEmailAndPassword)
+	})
+
+	app.Route("/email", func(router fiber.Router) {
+		router.Get("/confirmation", emailC.ConfirmEmail)
 	})
 
 	logger.Errorf(app.Listen(fmt.Sprintf(":%s", env.Port)))
