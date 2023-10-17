@@ -78,17 +78,13 @@ func main() {
 
 	app.Route("/monitor", func(router fiber.Router) {
 		router.Get("/metrics", monitor.New(monitor.Config{
-			Title: "Monitor Auth",
+			Title: "Monitor auth backend",
 		}))
 		router.Get("/health", systemC.Health)
 	})
 
 	app.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
-	})
-
-	app.Route("/email", func(router fiber.Router) {
-		router.Get("/confirmation", emailC.ConfirmEmail)
 	})
 
 	logger.Errorf(app.Listen(fmt.Sprintf(":%s", env.Port)))
