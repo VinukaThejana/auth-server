@@ -7,10 +7,13 @@ import (
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
+	"github.com/VinukaThejana/auth/errors"
+	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/templates"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/google/uuid"
 	"github.com/resendlabs/resend-go"
+	"gorm.io/gorm"
 )
 
 const (
@@ -54,4 +57,22 @@ func (e *Email) SendConfirmation(email string) {
 	}
 
 	logger.Log(fmt.Sprintf("[ %s ] : Confirmation email sent", send.Id))
+}
+
+// ResendConfirmation is a funtion that is used to resend the confirmation email
+func (e *Email) ResendConfirmation() error {
+	var user models.User
+	err := e.Conn.DB.Where(&models.User{
+		ID: &e.UserID,
+	}).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.ErrUnauthorized
+		}
+
+		return err
+	}
+
+	e.SendConfirmation(user.Email)
+	return nil
 }
