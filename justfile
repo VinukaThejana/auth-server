@@ -41,3 +41,10 @@ redis argv="session":
     echo "Not a valid Redis database"
   fi
 
+
+test argv1 argv2 argument1="" argument2="" argument3="" argument4="":
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  path="tests/{{ argv1 }}/{{ argv2 }}.lua"
+
+  lua "$path" {{ argument1 }} {{ argument2 }} {{ argument3 }} {{ argument4 }}
