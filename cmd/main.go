@@ -24,6 +24,7 @@ var (
 	systemC controllers.System
 	authC   controllers.Auth
 	emailC  controllers.Email
+	userC   controllers.User
 )
 
 func init() {
@@ -43,6 +44,10 @@ func init() {
 		Env:  &env,
 	}
 	emailC = controllers.Email{
+		Conn: &conn,
+		Env:  &env,
+	}
+	userC = controllers.User{
 		Conn: &conn,
 		Env:  &env,
 	}
@@ -85,6 +90,10 @@ func main() {
 
 	app.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
+	})
+
+	app.Route("/check", func(router fiber.Router) {
+		router.Post("/username", userC.CheckUsername)
 	})
 
 	logger.Errorf(app.Listen(fmt.Sprintf(":%s", env.Port)))
