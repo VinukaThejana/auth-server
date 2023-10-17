@@ -37,21 +37,22 @@ func (u *User) IsEmailAvailable(email string) (
 // IsUsernameAvailable is a function that is used to check wether a username is available
 func (u *User) IsUsernameAvailable(username string) (
 	isUsernameAvailable bool,
+	isVerified bool,
 	err error,
 ) {
 	var user models.User
-	err = u.Conn.DB.Select("username").Where(&models.User{
+	err = u.Conn.DB.Select("username", "verified").Where(&models.User{
 		Username: username,
 	}).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return true, nil
+			return true, false, nil
 		}
 
-		return false, err
+		return false, false, err
 	}
 
-	return false, nil
+	return false, user.Verified, nil
 }
 
 // Create is a function that is used to create a new user in the relational database
