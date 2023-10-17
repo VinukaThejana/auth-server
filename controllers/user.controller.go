@@ -58,9 +58,8 @@ func (u *User) CheckUsername(c *fiber.Ctx) error {
 			Status:      errors.ErrInternalServerError.Error(),
 		})
 	}
-
-	if isAvailable && !isVerified {
-		isAvailable = false
+	if !isAvailable && !isVerified {
+		isAvailable = true
 	}
 
 	return c.Status(fiber.StatusOK).JSON(res{
