@@ -1,6 +1,8 @@
 package services
 
 import (
+	"strings"
+
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/google/uuid"
@@ -46,6 +48,9 @@ func (u *User) IsUsernameAvailable(username string) (
 	}).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
+			if strings.ToLower(user.Username) == strings.ToLower(username) {
+				return false, false, nil
+			}
 			return true, false, nil
 		}
 
