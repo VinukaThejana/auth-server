@@ -73,3 +73,39 @@ func (u *User) Create(user models.User) (
 
 	return newUser, nil
 }
+
+// GetUserWithID is function that is used to get the user with the given ID
+func (u *User) GetUserWithID(ID uuid.UUID) (newUser *models.User, err error) {
+	err = u.Conn.DB.Where(&models.User{
+		ID: &ID,
+	}).First(&newUser).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
+}
+
+// GetUserWithEmail is a function that is used to get the user with the given email address
+func (u *User) GetUserWithEmail(email string) (newUser *models.User, err error) {
+	err = u.Conn.DB.Where(&models.User{
+		Email: email,
+	}).First(&newUser).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
+}
+
+// GetUserWithUsername is a function that is used to get the user based on the username of the user
+func (u *User) GetUserWithUsername(username string) (newUser *models.User, err error) {
+	err = u.Conn.DB.Where(&models.User{
+		Username: username,
+	}).First(&newUser).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
+}
