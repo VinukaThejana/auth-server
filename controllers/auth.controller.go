@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
@@ -63,7 +66,30 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 	newUser, err = userS.Create(newUser)
 	if err != nil {
 		if ok := (errors.CheckDBError{}.DuplicateKey(err)); ok {
-			return errors.UsernameAlreadyUsed(c)
+			logger.Log(fmt.Sprintf("New user details : %+v", newUser))
+			if strings.Contains(err.Error(), "idx_users_email") {
+				user, err := userS.GetUserWithEmail(payload.Email)
+				if err != nil {
+					logger.Error(err)
+					return errors.EmailAlreadyUsed(c)
+				}
+
+				if user.Verified {
+					return errors.EmailAlreadyUsed(c)
+				}
+			} else if strings.Contains(err.Error(), "idx_users_username") {
+				user, err := userS.GetUserWithUsername(payload.Username)
+				if err != nil {
+					logger.Error(err)
+					return errors.UsernameAlreadyUsed(c)
+				}
+
+				if user.Verified {
+					return errors.UsernameAlreadyUsed(c)
+				}
+			} else {
+				return errors.BadRequest(c)
+			}
 		}
 
 		logger.Error(err)
