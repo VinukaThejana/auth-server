@@ -77,6 +77,12 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 				if user.Verified {
 					return errors.EmailAlreadyUsed(c)
 				}
+
+				err = userS.DeleteUser(*user)
+				if err != nil {
+					logger.Error(err)
+					return errors.EmailAlreadyUsed(c)
+				}
 			} else if strings.Contains(err.Error(), "idx_users_username") {
 				user, err := userS.GetUserWithUsername(payload.Username)
 				if err != nil {
@@ -85,6 +91,12 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 				}
 
 				if user.Verified {
+					return errors.UsernameAlreadyUsed(c)
+				}
+
+				err = userS.DeleteUser(*user)
+				if err != nil {
+					logger.Error(err)
 					return errors.UsernameAlreadyUsed(c)
 				}
 			} else {
