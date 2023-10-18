@@ -109,3 +109,8 @@ func (u *User) GetUserWithUsername(username string) (newUser *models.User, err e
 
 	return newUser, nil
 }
+
+// DeleteUser is a function that is used to delete a user
+func (u *User) DeleteUser(user models.User) error {
+	return u.Conn.DB.Delete(user).Error
+}
