@@ -1,7 +1,8 @@
-// Package calidate contains custom validation functions
+// Package validate contains custom validation functions
 package validate
 
 import (
+	"net/mail"
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
@@ -26,4 +27,26 @@ func Password(fl validator.FieldLevel) bool {
 
 	err := passwordvalidator.Validate(password, minEntropy)
 	return err == nil
+}
+
+// LoginWithEmailOrUsernameAndPassword is a function to login the user with the username and the password or email and the password
+func LoginWithEmailOrUsernameAndPassword(fl validator.FieldLevel) bool {
+	username := fl.Parent().FieldByName("Username").String()
+	email := fl.Parent().FieldByName("Email").String()
+
+	if username == "" && email == "" {
+		return false
+	}
+
+	if email != "" {
+		_, err := mail.ParseAddress(email)
+		return err == nil
+	}
+
+	regex, err := regexp.Compile(`^[a-zA-Z0-9_.#]{1,20}$`)
+	if err != nil {
+		return false
+	}
+
+	return regex.MatchString(username)
 }
