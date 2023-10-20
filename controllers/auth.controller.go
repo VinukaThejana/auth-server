@@ -53,7 +53,7 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	newUser := models.User{
+	newUserD := models.User{
 		Name:     payload.Name,
 		Username: payload.Username,
 		Email:    payload.Email,
@@ -63,7 +63,7 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 	userS := services.User{
 		Conn: a.Conn,
 	}
-	newUser, err = userS.Create(newUser)
+	newUser, err := userS.Create(newUserD)
 	if err != nil {
 		if ok := (errors.CheckDBError{}.DuplicateKey(err)); ok {
 			logger.Log(fmt.Sprintf("New user details : %+v", newUser))
@@ -102,10 +102,16 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 			} else {
 				return errors.BadRequest(c)
 			}
-		}
 
-		logger.Error(err)
-		return errors.InternalServerErr(c)
+			newUser, err = userS.Create(newUserD)
+			if err != nil {
+				logger.Error(err)
+				return errors.InternalServerErr(c)
+			}
+		} else {
+			logger.Error(err)
+			return errors.InternalServerErr(c)
+		}
 	}
 
 	emailClient := utils.Email{
