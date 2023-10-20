@@ -242,5 +242,7 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 		Domain:   "localhost",
 	})
 
-	return c.Redirect(a.Env.FrontendURL)
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
 }
