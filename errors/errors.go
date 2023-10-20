@@ -25,6 +25,8 @@ var (
 	ErrEmailAlreadyUsed          = fmt.Errorf("email_already_used")
 	ErrEmailConfirmationExpired  = fmt.Errorf("email_confirmation_expired")
 	ErrHaveAnAccountWithTheEmail = fmt.Errorf("already_have_an_account")
+	ErrNoAccountWithEmail        = fmt.Errorf("no_account_with_email")
+	ErrNoAccountWithUsername     = fmt.Errorf("no_account_with_username")
 	ErrAddAUsername              = fmt.Errorf("add_a_username")
 	Okay                         = "okay"
 )
@@ -79,6 +81,14 @@ func UsernameAlreadyUsed(c *fiber.Ctx) error {
 
 func EmailAlreadyUsed(c *fiber.Ctx) error {
 	return badrequest(c, ErrEmailAlreadyUsed)
+}
+
+func NoAccountWithEmail(c *fiber.Ctx) error {
+	return badrequest(c, ErrNoAccountWithEmail)
+}
+
+func NoAccountWithUsername(c *fiber.Ctx) error {
+	return badrequest(c, ErrNoAccountWithUsername)
 }
 
 //revive:enable
