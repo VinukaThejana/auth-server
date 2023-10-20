@@ -339,3 +339,79 @@ func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDe
 
 	return tokenDetails, metadata, nil
 }
+
+// SessionToken is struct that manages the session token
+type SessionToken struct {
+	Conn *connect.Connector
+	Env  *config.Env
+}
+
+// Create is a function that is used to create a new session token
+func (s *SessionToken) Create(user models.User) (tokenDetails *Details, err error) {
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	tokenDetails = &Details{
+		ExpiresIn: new(int64),
+		Token:     new(string),
+	}
+	*tokenDetails.ExpiresIn = now.Add(s.Env.RefreshTokenExpires).Unix()
+	tokenDetails.TokenUUID = uid.String()
+	tokenDetails.UserID = user.ID.String()
+
+	claims := make(jwt.MapClaims)
+	claims["sub"] = user.ID
+	claims["token_uuid"] = tokenDetails.TokenUUID
+	claims["exp"] = tokenDetails.ExpiresIn
+	claims["iat"] = now.Unix()
+	claims["nbf"] = now.Unix()
+	claims["name"] = user.Name
+	claims["username"] = user.Username
+	claims["email"] = user.Email
+
+	*tokenDetails.Token, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.Env.SessionSecret))
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenDetails, nil
+}
+
+// Validate is a function that is used to validate the session token
+func (s *SessionToken) Validate(tokenStr string) (token *jwt.Token, err error) {
+	token, err = jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected formating method")
+		}
+
+		return []byte(s.Env.SessionSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+// GetUserDetails is a function that is used to get the user details from the session token
+func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *models.User, err error) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("cannot get details from the token")
+	}
+
+	userID, err := uuid.Parse(claims["sub"].(string))
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.User{
+		ID:       &userID,
+		Name:     claims["name"].(string),
+		Username: claims["username"].(string),
+		Email:    claims["email"].(string),
+	}, nil
+}
