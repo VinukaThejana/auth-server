@@ -90,6 +90,7 @@ func main() {
 
 	app.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
+		router.Post("/login", authC.LoginWEmailAndPassword)
 	})
 
 	app.Route("/check", func(router fiber.Router) {
