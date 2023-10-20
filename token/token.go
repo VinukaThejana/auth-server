@@ -18,8 +18,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// TokenDetails is a struct that contains the data that need to be used when creating tokens
-type TokenDetails struct {
+// Details is a struct that contains the data that need to be used when creating tokens
+type Details struct {
 	Token     *string
 	ExpiresIn *int64
 	TokenUUID string
@@ -34,7 +34,7 @@ type RefreshToken struct {
 }
 
 // Create a refresh token
-func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetails *TokenDetails, err error) {
+func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetails *Details, err error) {
 	now := time.Now().UTC()
 
 	tokenUUID, err := uuid.NewUUID()
@@ -42,7 +42,7 @@ func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetai
 		return nil, err
 	}
 
-	tokenDetails = &TokenDetails{
+	tokenDetails = &Details{
 		ExpiresIn: new(int64),
 		Token:     new(string),
 	}
@@ -128,7 +128,7 @@ type AccessToken struct {
 }
 
 // Create is a function that is used to create the access token
-func (a *AccessToken) Create(refreshTokenUUID string) (tokenDetails *TokenDetails, err error) {
+func (a *AccessToken) Create(refreshTokenUUID string) (tokenDetails *Details, err error) {
 	now := time.Now().UTC()
 
 	tokenUUID, err := uuid.NewUUID()
@@ -136,7 +136,7 @@ func (a *AccessToken) Create(refreshTokenUUID string) (tokenDetails *TokenDetail
 		return nil, err
 	}
 
-	tokenDetails = &TokenDetails{
+	tokenDetails = &Details{
 		ExpiresIn: new(int64),
 		Token:     new(string),
 	}
@@ -286,7 +286,7 @@ func DeleteExpired(conn *connect.Connector, userID uuid.UUID) {
 	}
 }
 
-func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDetails *TokenDetails, metadata interface{}, err error) {
+func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDetails *Details, metadata interface{}, err error) {
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil {
 		return nil, nil, err
@@ -313,7 +313,7 @@ func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDe
 		return nil, nil, fmt.Errorf("validate : invalid token")
 	}
 
-	tokenDetails = &TokenDetails{
+	tokenDetails = &Details{
 		TokenUUID: fmt.Sprint(claims["token_uuid"]),
 		UserID:    fmt.Sprint(claims["sub"]),
 	}
