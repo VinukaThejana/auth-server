@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/VinukaThejana/auth/config"
@@ -371,6 +372,7 @@ func (s *SessionToken) Create(user models.User) (tokenDetails *Details, err erro
 	claims["name"] = user.Name
 	claims["username"] = user.Username
 	claims["email"] = user.Email
+	claims["two_factor_enabled"] = user.TwoFactorEnabled
 
 	*tokenDetails.Token, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.Env.SessionSecret))
 	if err != nil {
@@ -407,11 +409,16 @@ func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *models.User, err 
 	if err != nil {
 		return nil, err
 	}
+	TwoFactorEnabled, err := strconv.ParseBool(claims["two_factor_enabled"].(string))
+	if err != nil {
+		return nil, err
+	}
 
 	return &models.User{
-		ID:       &userID,
-		Name:     claims["name"].(string),
-		Username: claims["username"].(string),
-		Email:    claims["email"].(string),
+		ID:               &userID,
+		Name:             claims["name"].(string),
+		Username:         claims["username"].(string),
+		Email:            claims["email"].(string),
+		TwoFactorEnabled: TwoFactorEnabled,
 	}, nil
 }
