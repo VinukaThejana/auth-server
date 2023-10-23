@@ -59,6 +59,7 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 		Name:     payload.Name,
 		Username: payload.Username,
 		Email:    payload.Email,
+		PhotoURL: fmt.Sprintf("https://api.dicebear.com/7.x/bottts/svg?seed=%s", payload.Username),
 		Password: string(hashedPassword),
 	}
 
@@ -242,7 +243,8 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 		Domain:   "localhost",
 	})
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": errors.Okay,
+		"user":   schemas.FilterUser(*user),
 	})
 }
