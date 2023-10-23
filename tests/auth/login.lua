@@ -54,6 +54,29 @@ local _, code, _ = http.request({
 })
 
 local data = json:decode(r[1])
+
+if code == 200 then
+	print("")
+	print("STATUS")
+	print("")
+	print("Status       : ", data["status"])
+	print("Code         : ", code)
+
+	print("")
+	print("USER DETAILS")
+	print("")
+	local user = data["user"]
+	print("ID           : ", user["id"])
+	print("Name         : ", user["name"])
+	print("Username     : ", user["username"])
+	print("Email        : ", user["email"])
+	print("PhotoURL     : ", user["photo_url"])
+	print("")
+	return
+end
+
+print("")
+print("STATUS")
 print("")
 print("Status       : ", data["status"])
 print("Code         : ", code)
