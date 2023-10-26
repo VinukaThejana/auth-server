@@ -371,6 +371,7 @@ func (s *SessionToken) Create(user models.User) (tokenDetails *Details, err erro
 	claims["nbf"] = now.Unix()
 	claims["name"] = user.Name
 	claims["username"] = user.Username
+	claims["photo_url"] = user.PhotoURL
 	claims["email"] = user.Email
 	claims["two_factor_enabled"] = user.TwoFactorEnabled
 
@@ -399,26 +400,23 @@ func (s *SessionToken) Validate(tokenStr string) (token *jwt.Token, err error) {
 }
 
 // GetUserDetails is a function that is used to get the user details from the session token
-func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *models.User, err error) {
+func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *schemas.User, err error) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return nil, fmt.Errorf("cannot get details from the token")
 	}
 
-	userID, err := uuid.Parse(claims["sub"].(string))
-	if err != nil {
-		return nil, err
-	}
-	TwoFactorEnabled, err := strconv.ParseBool(claims["two_factor_enabled"].(string))
+	twoFactorEnabled, err := strconv.ParseBool(claims["two_factor_enabled"].(string))
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.User{
-		ID:               &userID,
+	return &schemas.User{
+		ID:               claims["sub"].(string),
 		Name:             claims["name"].(string),
 		Username:         claims["username"].(string),
 		Email:            claims["email"].(string),
-		TwoFactorEnabled: TwoFactorEnabled,
+		PhotoURL:         claims["photo_url"].(string),
+		TwoFactorEnabled: twoFactorEnabled,
 	}, nil
 }
