@@ -7,6 +7,7 @@ import (
 	"github.com/VinukaThejana/auth/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // User contains all the user related services
@@ -113,4 +114,16 @@ func (u *User) GetUserWithUsername(username string) (newUser *models.User, err e
 // DeleteUser is a function that is used to delete a user
 func (u *User) DeleteUser(user models.User) error {
 	return u.Conn.DB.Delete(user).Error
+}
+
+// SetupTOTP2FactorVerification is a function that is used to setup TOTP 2 factor authentication for a given user
+func (u *User) SetupTOTP2FactorVerification(totp models.OTP) error {
+	return u.Conn.DB.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "user_id"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"secret":         totp.Secret,
+			"auth_url":       totp.AuthURL,
+			"memonic_phrase": totp.MemonicPhrase,
+		}),
+	}).Create(&totp).Error
 }
