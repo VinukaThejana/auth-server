@@ -116,7 +116,7 @@ func (CheckDBError) DuplicateKey(err error) bool {
 // CheckTokenError is a struct that is used to handle token related errors
 type CheckTokenError struct{}
 
-// Expired is a funciton that is used to identify wether the token is expired or not
+// Expired is a function that is used to identify wether the token is expired or not
 func (CheckTokenError) Expired(err error) bool {
 	return err.Error() == "token has invalid claims: token is expired"
 }
