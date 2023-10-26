@@ -97,5 +97,8 @@ func main() {
 		router.Post("/username", userC.CheckUsername)
 	})
 
+	app.Route("/email", func(router fiber.Router) {
+		router.Get("/confirmation", emailC.ConfirmEmail)
+	})
 	logger.Errorf(app.Listen(fmt.Sprintf(":%s", env.Port)))
 }
