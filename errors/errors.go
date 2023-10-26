@@ -45,6 +45,10 @@ func unauthorized(c *fiber.Ctx, err error) error {
 	})
 }
 
+func Unauthorized(c *fiber.Ctx) error {
+	return unauthorized(c, ErrUnauthorized)
+}
+
 func AccessTokenExpired(c *fiber.Ctx) error {
 	return unauthorized(c, ErrAccessTokenExpired)
 }
