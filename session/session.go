@@ -1,3 +1,4 @@
+// Package session contains session related activity
 package session
 
 import (
