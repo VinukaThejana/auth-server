@@ -101,24 +101,28 @@ func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetai
 
 // Validate is a function that is used to validate the refresh token
 func (r *RefreshToken) Validate(token string) (isValid bool, err error) {
-	tokenDetails, metadata, err := validate(r.Conn, token, r.Env.RefreshTokenPublicKey, r.UserID.String())
+	_, _, err = validate(r.Conn, token, r.Env.RefreshTokenPublicKey, r.UserID.String())
 	if err != nil {
+		if err == errors.ErrUnauthorized {
+			return false, errors.ErrRefreshTokenExpired
+		}
 		return false, err
-	}
-	if metadata == nil {
-		return false, fmt.Errorf("failed to get refresh token details")
-	}
-
-	if tokenDetails.UserID != r.UserID.String() {
-		return false, nil
-	}
-
-	now := time.Now().UTC().Unix()
-	if *tokenDetails.ExpiresIn <= now {
-		return false, nil
 	}
 
 	return true, nil
+}
+
+// Get is a function that is used to get the refesh token details while verifying it
+func (r *RefreshToken) Get(tokenStr string) (token *Details, err error) {
+	tokenDetails, _, err := validate(r.Conn, tokenStr, r.Env.RefreshTokenPublicKey, r.UserID.String())
+	if err != nil {
+		if err == errors.ErrUnauthorized {
+			return nil, errors.ErrRefreshTokenExpired
+		}
+		return nil, err
+	}
+
+	return tokenDetails, nil
 }
 
 // AccessToken is a struct that is used to perform operations on access tokens
@@ -193,21 +197,29 @@ func (a *AccessToken) Create(refreshTokenUUID string) (tokenDetails *Details, er
 
 // Validate is a function that is used to validate the access token
 func (a *AccessToken) Validate(token string) (isValid bool, err error) {
-	tokenDetails, _, err := validate(a.Conn, token, a.Env.AccessTokenPublicKey, a.UserID.String())
+	_, _, err = validate(a.Conn, token, a.Env.AccessTokenPublicKey, a.UserID.String())
 	if err != nil {
+		if err == errors.ErrUnauthorized {
+			return false, errors.ErrAccessTokenExpired
+		}
 		return false, err
 	}
 
-	if tokenDetails.UserID != a.UserID.String() {
-		return false, nil
-	}
-
-	now := time.Now().UTC().Unix()
-	if *tokenDetails.ExpiresIn <= now {
-		return false, nil
-	}
-
 	return true, nil
+}
+
+// Get is a function that is used to get access token details while verifying them
+func (a *AccessToken) Get(tokenStr string) (token *Details, err error) {
+	tokenDetails, _, err := validate(a.Conn, tokenStr, a.Env.AccessTokenPublicKey, a.UserID.String())
+	if err != nil {
+		if err == errors.ErrUnauthorized {
+			return nil, errors.ErrAccessTokenExpired
+		}
+
+		return nil, err
+	}
+
+	return tokenDetails, nil
 }
 
 // Delete is a function that is used to delete access and refresh tokens
@@ -335,7 +347,12 @@ func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDe
 
 	metadata, ok = valStr.(schemas.RefreshTokenDetails)
 	if !ok {
-		return tokenDetails, nil, nil
+		return nil, nil, errors.ErrUnauthorized
+	}
+
+	now := time.Now().UTC().Unix()
+	if *tokenDetails.ExpiresIn <= now {
+		return nil, nil, errors.ErrUnauthorized
 	}
 
 	return tokenDetails, metadata, nil
