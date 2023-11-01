@@ -79,3 +79,50 @@ func (a *Auth) Check(c *fiber.Ctx) error {
 
 	return c.Next()
 }
+
+// CheckRefreshToken is a used to check ther refresh token
+func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
+	refreshTokenC := c.Cookies("refresh_token")
+	if refreshTokenC == "" {
+		return errors.Unauthorized(c)
+	}
+	sessionTokenC := c.Cookies("session_token")
+	if sessionTokenC == "" {
+		return errors.Unauthorized(c)
+	}
+
+	refreshTokenS := token.RefreshToken{
+		Conn: a.Conn,
+		Env:  a.Env,
+	}
+	sessionTokenS := token.SessionToken{
+		Conn: a.Conn,
+		Env:  a.Env,
+	}
+
+	isValid, err := refreshTokenS.Validate(refreshTokenC)
+	sessionToken, err := sessionTokenS.Validate(sessionTokenC)
+	if err != nil {
+		if ok := (errors.CheckTokenError{}.Expired(err)); ok {
+			return errors.Unauthorized(c)
+		}
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if !isValid {
+		return errors.Unauthorized(c)
+	}
+
+	user, err := sessionTokenS.GetUserDetails(sessionToken)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	session.SaveRefreshToken(c, refreshTokenC)
+	session.SaveSessionToken(c, sessionTokenC)
+	session.Add(c, user)
+
+	return c.Next()
+}
