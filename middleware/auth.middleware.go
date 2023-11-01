@@ -96,7 +96,7 @@ func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
 	if refreshTokenC == "" {
 		return errors.Unauthorized(c)
 	}
-	sessionTokenC := c.Cookies("session_token")
+	sessionTokenC := c.Cookies("session")
 	if sessionTokenC == "" {
 		return errors.Unauthorized(c)
 	}

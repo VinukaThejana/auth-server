@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/VinukaThejana/auth/config"
@@ -304,8 +303,7 @@ func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDe
 	if err != nil {
 		return nil, nil, err
 	}
-
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(decodedPublicKey)
+	key, err := jwt.ParseRSAPublicKeyFromPEM(decodedPublicKey)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -326,9 +324,12 @@ func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDe
 		return nil, nil, fmt.Errorf("validate : invalid token")
 	}
 
+	exp := int64(claims["exp"].(float64))
 	tokenDetails = &Details{
 		TokenUUID: fmt.Sprint(claims["token_uuid"]),
 		UserID:    fmt.Sprint(claims["sub"]),
+		ExpiresIn: &exp,
+		Token:     &token,
 	}
 	if tokenDetails.UserID != userID {
 		return nil, nil, errors.ErrUnauthorized
@@ -339,15 +340,15 @@ func validate(conn *connect.Connector, token, publicKey, userID string) (tokenDe
 		return nil, nil, errors.ErrUnauthorized
 	}
 
-	var valStr interface{}
+	var valStr map[string]interface{}
 	err = json.Unmarshal([]byte(val), &valStr)
 	if err != nil {
 		return tokenDetails, nil, nil
 	}
 
-	metadata, ok = valStr.(schemas.RefreshTokenDetails)
-	if !ok {
-		return nil, nil, errors.ErrUnauthorized
+	metadata = schemas.RefreshTokenDetails{
+		UserID:          valStr["UserID"].(string),
+		AccessTokenUUID: valStr["AccessTokenUUID"].(string),
 	}
 
 	now := time.Now().UTC().Unix()
@@ -423,10 +424,7 @@ func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *schemas.User, err
 		return nil, fmt.Errorf("cannot get details from the token")
 	}
 
-	twoFactorEnabled, err := strconv.ParseBool(claims["two_factor_enabled"].(string))
-	if err != nil {
-		return nil, err
-	}
+	twoFactorEnabled := claims["two_factor_enabled"].(bool)
 
 	return &schemas.User{
 		ID:               claims["sub"].(string),
