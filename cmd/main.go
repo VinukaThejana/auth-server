@@ -8,6 +8,7 @@ import (
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/controllers"
+	"github.com/VinukaThejana/auth/middleware"
 	"github.com/VinukaThejana/auth/utils"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/gofiber/fiber/v2"
@@ -21,6 +22,7 @@ var (
 	env  config.Env
 	conn connect.Connector
 
+	authM middleware.Auth
 	systemC controllers.System
 	authC   controllers.Auth
 	emailC  controllers.Email
@@ -36,6 +38,10 @@ func init() {
 	conn.InitRatelimiter(&env)
 	conn.InitRedis(&env)
 
+	authM = middleware.Auth{
+		Conn: &conn,
+		Env:  &env,
+	}
 	systemC = controllers.System{
 		Conn: &conn,
 	}
@@ -91,6 +97,7 @@ func main() {
 	app.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
 		router.Post("/login", authC.LoginWEmailAndPassword)
+		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
 	})
 
 	app.Route("/check", func(router fiber.Router) {

@@ -10,12 +10,14 @@ import (
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
 	"github.com/VinukaThejana/auth/services"
+	"github.com/VinukaThejana/auth/session"
 	"github.com/VinukaThejana/auth/token"
 	"github.com/VinukaThejana/auth/utils"
 	"github.com/VinukaThejana/auth/validate"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -248,3 +250,60 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 		"user":   schemas.FilterUser(*user),
 	})
 }
+// RefreshAccessToken is a function that is used to refresh the access token with the refresh token
+func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
+	logger.Log("Hello world")
+
+	refreshTokenC := session.GetRefreshToken(c)
+	user := session.Get(c)
+
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	refreshTokenS := token.RefreshToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: userID,
+	}
+
+	refreshToken, err := refreshTokenS.Get(refreshTokenC)
+	if err != nil {
+		if err == errors.ErrRefreshTokenExpired {
+			return errors.RefreshTokenExpired(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	accessTokenS := token.AccessToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: userID,
+	}
+
+	tokenDetails, err := accessTokenS.Create(refreshToken.TokenUUID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    *tokenDetails.Token,
+		Path:     "/",
+		MaxAge:   a.Env.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
+}
+
+// CreateOTP is a function that is used to create the user OTP
