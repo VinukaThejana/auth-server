@@ -10,6 +10,7 @@ import (
 	"github.com/VinukaThejana/auth/token"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 // Auth contains auth related middlewares
@@ -31,23 +32,6 @@ func (a *Auth) Check(c *fiber.Ctx) error {
 		return errors.AccessTokenNotProvided(c)
 	}
 
-	accessTokenS := token.AccessToken{
-		Conn: a.Conn,
-	}
-
-	isValid, err := accessTokenS.Validate(accessToken)
-	if !isValid {
-		return errors.AccessTokenExpired(c)
-	}
-	if err != nil {
-		if isExpired := (errors.CheckTokenError{}.Expired(err)); isExpired {
-			return errors.AccessTokenExpired(c)
-		}
-
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
-
 	sessionC := c.Cookies("session")
 	if sessionC == "" {
 		return errors.Unauthorized(c)
@@ -55,6 +39,7 @@ func (a *Auth) Check(c *fiber.Ctx) error {
 
 	sessionTokenS := token.SessionToken{
 		Conn: a.Conn,
+		Env:  a.Env,
 	}
 
 	sessionToken, err := sessionTokenS.Validate(sessionC)
@@ -69,6 +54,31 @@ func (a *Auth) Check(c *fiber.Ctx) error {
 
 	user, err := sessionTokenS.GetUserDetails(sessionToken)
 	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		errors.InternalServerErr(c)
+	}
+
+	accessTokenS := token.AccessToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: userID,
+	}
+
+	isValid, err := accessTokenS.Validate(accessToken)
+	if !isValid {
+		return errors.AccessTokenExpired(c)
+	}
+	if err != nil {
+		if isExpired := (errors.CheckTokenError{}.Expired(err)); isExpired {
+			return errors.AccessTokenExpired(c)
+		}
+
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
@@ -91,17 +101,35 @@ func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
 		return errors.Unauthorized(c)
 	}
 
-	refreshTokenS := token.RefreshToken{
-		Conn: a.Conn,
-		Env:  a.Env,
-	}
 	sessionTokenS := token.SessionToken{
 		Conn: a.Conn,
 		Env:  a.Env,
 	}
+	sessionToken, err := sessionTokenS.Validate(sessionTokenC)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	user, err := sessionTokenS.GetUserDetails(sessionToken)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	refreshTokenS := token.RefreshToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: userID,
+	}
 
 	isValid, err := refreshTokenS.Validate(refreshTokenC)
-	sessionToken, err := sessionTokenS.Validate(sessionTokenC)
 	if err != nil {
 		if ok := (errors.CheckTokenError{}.Expired(err)); ok {
 			return errors.Unauthorized(c)
@@ -112,12 +140,6 @@ func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
 
 	if !isValid {
 		return errors.Unauthorized(c)
-	}
-
-	user, err := sessionTokenS.GetUserDetails(sessionToken)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
 	}
 
 	session.SaveRefreshToken(c, refreshTokenC)
