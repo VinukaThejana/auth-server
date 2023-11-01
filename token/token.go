@@ -424,14 +424,12 @@ func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *schemas.User, err
 		return nil, fmt.Errorf("cannot get details from the token")
 	}
 
-	twoFactorEnabled := claims["two_factor_enabled"].(bool)
-
 	return &schemas.User{
 		ID:               claims["sub"].(string),
 		Name:             claims["name"].(string),
 		Username:         claims["username"].(string),
 		Email:            claims["email"].(string),
 		PhotoURL:         claims["photo_url"].(string),
-		TwoFactorEnabled: twoFactorEnabled,
+		TwoFactorEnabled: claims["two_factor_enabled"].(bool),
 	}, nil
 }

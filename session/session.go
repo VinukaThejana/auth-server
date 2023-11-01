@@ -2,8 +2,6 @@
 package session
 
 import (
-	"strconv"
-
 	"github.com/VinukaThejana/auth/schemas"
 	"github.com/gofiber/fiber/v2"
 )
@@ -23,20 +21,15 @@ func Add(c *fiber.Ctx, user *schemas.User) {
 }
 
 // Get the user details from the session
-func Get(c *fiber.Ctx) (user *schemas.User, err error) {
-	twoFactorEnabled, err := strconv.ParseBool(c.Locals("two_factor_enabled").(string))
-	if err != nil {
-		return nil, err
-	}
-
+func Get(c *fiber.Ctx) (user *schemas.User) {
 	return &schemas.User{
 		ID:               c.Locals("id").(string),
 		Name:             c.Locals("name").(string),
 		Username:         c.Locals("username").(string),
 		Email:            c.Locals("email").(string),
 		PhotoURL:         c.Locals("photo_url").(string),
-		TwoFactorEnabled: twoFactorEnabled,
-	}, nil
+		TwoFactorEnabled: c.Locals("two_factor_enabled").(bool),
+	}
 }
 
 // SaveSessionToken save the session token
