@@ -252,8 +252,6 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 }
 // RefreshAccessToken is a function that is used to refresh the access token with the refresh token
 func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
-	logger.Log("Hello world")
-
 	refreshTokenC := session.GetRefreshToken(c)
 	user := session.Get(c)
 
