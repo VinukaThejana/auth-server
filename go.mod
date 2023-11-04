@@ -5,7 +5,7 @@ go 1.21.1
 require github.com/spf13/viper v1.17.0
 
 require (
-	github.com/VinukaThejana/go-utils/logger v0.0.0-20231010161001-94625009f8d2 // indirect
+	github.com/VinukaThejana/go-utils/logger v0.0.0-20231010161001-94625009f8d2
 	github.com/VinukaThejana/go-utils/text v0.0.0-20231010161001-94625009f8d2 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
@@ -16,8 +16,8 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.15.5 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/go-playground/validator/v10 v10.15.5
+	github.com/google/uuid v1.3.1
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -31,14 +31,14 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
-	github.com/pquerna/otp v1.4.0 // indirect
-	github.com/redis/go-redis/v9 v9.0.2 // indirect
+	github.com/pquerna/otp v1.4.0
+	github.com/redis/go-redis/v9 v9.0.2
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.49.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0 // indirect
 )
 
