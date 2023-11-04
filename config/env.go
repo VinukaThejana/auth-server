@@ -28,6 +28,7 @@ type Env struct {
 	RefreshTokenExpires      time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN" validate:"required"`
 	RefreshTokenMaxAge       int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required,number"`
 	SessionSecret            string        `mapstructure:"SESSION_SECRET" validate:"required"`
+	AuthConfirmTokenSecret   string        `mapstructure:"AUTH_CONFIRM_TOKEN_SECRET" validate:"required"`
 	ResendAPIKey             string        `mapstructure:"RESEND_API_KEY" validate:"required"`
 	FrontendHostname         string        `mapstructure:"FRONTEND_HOSTNAME" validate:"required,hostname"`
 	FrontendURL              string        `mapstructure:"FRONTEND_URL" validate:"required,url"`
