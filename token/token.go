@@ -433,3 +433,57 @@ func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *schemas.User, err
 		TwoFactorEnabled: claims["two_factor_enabled"].(bool),
 	}, nil
 }
+
+// AuthConfirmToken is a struct that is used to manage AuthConfirmToken related operations
+type AuthConfirmToken struct {
+	Conn   *connect.Connector
+	Env    *config.Env
+	UserID string
+}
+
+// Create is a function that is used to create a new auth confirm token
+func (a *AuthConfirmToken) Create() (tokenDetails *Details, err error) {
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	tokenDetails = &Details{
+		ExpiresIn: new(int64),
+		Token:     new(string),
+	}
+	*tokenDetails.ExpiresIn = now.Add(a.Env.RefreshTokenExpires).Unix()
+	tokenDetails.TokenUUID = uid.String()
+	tokenDetails.UserID = a.UserID
+
+	claims := make(jwt.MapClaims)
+	claims["sub"] = a.UserID
+	claims["token_uuid"] = tokenDetails.TokenUUID
+	claims["exp"] = tokenDetails.ExpiresIn
+	claims["iat"] = now.Unix()
+	claims["nbf"] = now.Unix()
+
+	*tokenDetails.Token, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(a.Env.AuthConfirmTokenSecret))
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenDetails, nil
+}
+
+// Validate is a function that is used to validate the auth confirm token
+func (a *AuthConfirmToken) Validate(tokenStr string) (token *jwt.Token, err error) {
+	token, err = jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected formating method")
+		}
+
+		return []byte(a.Env.AuthConfirmTokenSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
