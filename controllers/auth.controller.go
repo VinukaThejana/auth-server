@@ -18,6 +18,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/pquerna/otp/totp"
+	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -250,6 +252,7 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 		"user":   schemas.FilterUser(*user),
 	})
 }
+
 // RefreshAccessToken is a function that is used to refresh the access token with the refresh token
 func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 	refreshTokenC := session.GetRefreshToken(c)
@@ -304,4 +307,113 @@ func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 	})
 }
 
-// CreateOTP is a function that is used to create the user OTP
+// CreateTOTP is a function that is used to create the user OTP
+func (a *Auth) CreateTOTP(c *fiber.Ctx) error {
+	user := session.Get(c)
+
+	userS := services.User{
+		Conn: a.Conn,
+	}
+
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "auth",
+		AccountName: user.ID,
+		SecretSize:  15,
+	})
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	entropy, err := bip39.NewEntropy(256)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	memonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = userS.SetupTOTP2FactorVerification(models.OTP{
+		UserID:        &userID,
+		Secret:        key.Secret(),
+		AuthURL:       key.URL(),
+		MemonicPhrase: memonic,
+	})
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": errors.Okay,
+		"secret": key.Secret(),
+		"url":    key.URL(),
+	})
+}
+
+// VerifyTOTP is a function that is used to verify the TOTP token
+func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var payload struct {
+		Code string `json:"code" validate:"required"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	err = v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	var otp models.OTP
+	err = a.Conn.DB.Where(&models.OTP{
+		UserID: &userID,
+	}).First(&otp).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.TwoFactorVerificationNotEnabled(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	valid := totp.Validate(payload.Code, otp.Secret)
+	if !valid {
+		return errors.OTPTokenIsNotValid(c)
+	}
+
+	if !otp.Verified {
+		otp.Verified = true
+		err = a.Conn.DB.Save(&otp).Error
+		if err != nil {
+			logger.Error(err)
+			errors.InternalServerErr(c)
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":         errors.Okay,
+		"memonic_phrase": otp.MemonicPhrase,
+	})
+}
