@@ -360,6 +360,89 @@ func (a *Auth) CreateTOTP(c *fiber.Ctx) error {
 	})
 }
 
+func reauthenticate(c *fiber.Ctx, a *Auth, userID string) error {
+	reAuthTokenS := token.AuthConfirmToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: userID,
+	}
+
+	tokenDetails, err := reAuthTokenS.Create()
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "reauth_token",
+		Value:    *tokenDetails.Token,
+		Path:     "/",
+		MaxAge:   5 * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
+}
+
+// ReAuthenticatWithEmailAndPassword is a function that is used to reauthenticat the user with email and password
+func (a *Auth) ReAuthenticatWithEmailAndPassword(c *fiber.Ctx) error {
+	var payload struct {
+		Email    string `json:"email"`
+		Username string `json:"username"`
+		Password string `json:"password" validate:"required,min=8,max=200,validate_password"`
+		Validate string `validate:"validate_login"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	v.RegisterValidation("validate_password", validate.Password)
+	v.RegisterValidation("validate_login", validate.LoginWithEmailOrUsernameAndPassword)
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	userS := services.User{
+		Conn: a.Conn,
+	}
+
+	var user *models.User
+	var custom error
+
+	if payload.Email != "" {
+		user, err = userS.GetUserWithEmail(payload.Email)
+		custom = errors.NoAccountWithEmail(c)
+	} else {
+		user, err = userS.GetUserWithUsername(payload.Username)
+		custom = errors.NoAccountWithUsername(c)
+	}
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return custom
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+	if err != nil {
+		logger.Error(err)
+		return errors.InCorrectCredentials(c)
+	}
+
+	return reauthenticate(c, a, user.ID.String())
+}
+
 // VerifyTOTP is a function that is used to verify the TOTP token
 func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 	user := session.Get(c)

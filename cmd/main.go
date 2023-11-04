@@ -100,6 +100,7 @@ func main() {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
 		router.Post("/login", authC.LoginWEmailAndPassword)
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
+		router.Post("/reauthenticate", authM.Check, authC.ReAuthenticatWithEmailAndPassword)
 
 		router.Route("/otp", func(router fiber.Router) {
 			router.Post("/generate", authM.Check, authC.CreateTOTP)
