@@ -148,3 +148,27 @@ func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
 
 	return c.Next()
 }
+
+// CheckReAuthToken is a function that is used to check the reauthentication token is present
+func (a *Auth) CheckReAuthToken(c *fiber.Ctx) error {
+	user := session.Get(c)
+
+	reAuthToken := c.Cookies("reauth_token")
+	if reAuthToken == "" {
+		return errors.ReAuthTokenNotPresent(c)
+	}
+
+	reAuthTokenS := token.AuthConfirmToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: user.ID,
+	}
+
+	_, err := reAuthTokenS.Validate(reAuthToken)
+	if err != nil {
+		logger.Error(err)
+		return errors.ReAuthTokenNotPresent(c)
+	}
+
+	return c.Next()
+}
