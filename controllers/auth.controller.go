@@ -417,3 +417,72 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 		"memonic_phrase": otp.MemonicPhrase,
 	})
 }
+
+// ResetTwoFactorAuthentication is a function that is used to verify the two factor authentication by using the memonic phrase
+func (a *Auth) ResetTwoFactorAuthentication(c *fiber.Ctx) error {
+	var payload struct {
+		Username      string `json:"username" validate:"required,min=3,max=20,validate_username"`
+		Password      string `json:"password" validate:"required,min=8,max=200,validate_password"`
+		MemonicPhrase string `json:"memonic_phrase" validate:"required"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	v.RegisterValidation("validate_username", validate.Username)
+	v.RegisterValidation("validate_password", validate.Password)
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	var user models.User
+	err = a.Conn.DB.Where(&models.User{
+		Username: payload.Username,
+	}).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.InCorrectCredentials(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+	if err != nil {
+		logger.Error(err)
+		return errors.InCorrectCredentials(c)
+	}
+
+	var otp models.OTP
+	err = a.Conn.DB.Where(&models.OTP{
+		UserID: user.ID,
+	}).First(&otp).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.TwoFactorVerificationNotEnabled(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if payload.MemonicPhrase != otp.MemonicPhrase {
+		return errors.MemonicPhraseIsNotMatching(c)
+	}
+
+	err = a.Conn.DB.Delete(&otp).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
+}

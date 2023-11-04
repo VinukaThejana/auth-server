@@ -23,6 +23,7 @@ var (
 	conn connect.Connector
 
 	authM middleware.Auth
+
 	systemC controllers.System
 	authC   controllers.Auth
 	emailC  controllers.Email
@@ -42,6 +43,7 @@ func init() {
 		Conn: &conn,
 		Env:  &env,
 	}
+
 	systemC = controllers.System{
 		Conn: &conn,
 	}
@@ -98,6 +100,12 @@ func main() {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
 		router.Post("/login", authC.LoginWEmailAndPassword)
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
+
+		router.Route("/otp", func(router fiber.Router) {
+			router.Post("/generate", authM.Check, authC.CreateTOTP)
+			router.Post("/verify", authM.Check, authC.VerifyTOTP)
+			router.Post("/reset", authC.ResetTwoFactorAuthentication)
+		})
 	})
 
 	app.Route("/check", func(router fiber.Router) {
@@ -107,5 +115,6 @@ func main() {
 	app.Route("/email", func(router fiber.Router) {
 		router.Get("/confirmation", emailC.ConfirmEmail)
 	})
+
 	logger.Errorf(app.Listen(fmt.Sprintf(":%s", env.Port)))
 }
