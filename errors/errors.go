@@ -29,6 +29,7 @@ var (
 	ErrNoAccountWithUsername           = fmt.Errorf("no_account_with_username")
 	ErrAddAUsername                    = fmt.Errorf("add_a_username")
 	ErrTwoFactorverificationNotEnabled = fmt.Errorf("two_factor_verification_not_enabled")
+	ErrOTPTokenIsNotValid              = fmt.Errorf("otp_token_is_not_valid")
 	Okay                               = "okay"
 )
 
@@ -98,6 +99,10 @@ func NoAccountWithUsername(c *fiber.Ctx) error {
 
 func TwoFactorVerificationNotEnabled(c *fiber.Ctx) error {
 	return badrequest(c, ErrTwoFactorverificationNotEnabled)
+}
+
+func OTPTokenIsNotValid(c *fiber.Ctx) error {
+	return badrequest(c, ErrOTPTokenIsNotValid)
 }
 
 //revive:enable
