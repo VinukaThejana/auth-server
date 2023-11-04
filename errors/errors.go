@@ -30,6 +30,7 @@ var (
 	ErrAddAUsername                    = fmt.Errorf("add_a_username")
 	ErrTwoFactorverificationNotEnabled = fmt.Errorf("two_factor_verification_not_enabled")
 	ErrOTPTokenIsNotValid              = fmt.Errorf("otp_token_is_not_valid")
+	ErrMemonicPhraseIsNotValid         = fmt.Errorf("memonic_phrase_not_valid")
 	Okay                               = "okay"
 )
 
@@ -103,6 +104,10 @@ func TwoFactorVerificationNotEnabled(c *fiber.Ctx) error {
 
 func OTPTokenIsNotValid(c *fiber.Ctx) error {
 	return badrequest(c, ErrOTPTokenIsNotValid)
+}
+
+func MemonicPhraseIsNotMatching(c *fiber.Ctx) error {
+	return badrequest(c, ErrMemonicPhraseIsNotValid)
 }
 
 //revive:enable
