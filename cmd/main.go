@@ -103,7 +103,7 @@ func main() {
 		router.Post("/reauthenticate", authM.Check, authC.ReAuthenticatWithEmailAndPassword)
 
 		router.Route("/otp", func(router fiber.Router) {
-			router.Post("/generate", authM.Check, authC.CreateTOTP)
+			router.Post("/generate", authM.Check, authM.CheckReAuthToken, authC.CreateTOTP)
 			router.Post("/verify", authM.Check, authC.VerifyTOTP)
 			router.Post("/reset", authC.ResetTwoFactorAuthentication)
 		})
