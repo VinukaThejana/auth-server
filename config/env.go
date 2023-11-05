@@ -42,7 +42,7 @@ func (e *Env) Load() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		logger.Errorf(err)
+		logger.Error(err)
 	}
 
 	err = viper.Unmarshal(&e)
