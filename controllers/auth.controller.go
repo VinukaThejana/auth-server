@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
@@ -573,6 +575,12 @@ func (a *Auth) ResetTwoFactorAuthentication(c *fiber.Ctx) error {
 // GetChallenge is a function that is used to get a crypographic challenge
 func (a *Auth) GetChallenge(c *fiber.Ctx) error {
 	challenge, err := utils.GenerateChallenge()
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = a.Conn.R.Challenge.SetEx(context.Background(), *challenge, false, time.Second*120).Err()
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)

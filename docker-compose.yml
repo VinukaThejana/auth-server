@@ -1,10 +1,10 @@
-version: '3.8'
+version: "3.8"
 services:
   postgres:
     image: postgres:latest
     container_name: postgres_db
     ports:
-      - '6500:5432'
+      - "6500:5432"
     volumes:
       - auth_postgres_db:/data
     env_file:
@@ -13,33 +13,41 @@ services:
     image: redis:alpine
     container_name: redis_session
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - auth_redis_session_db:/data
   redis_ratelimiter:
     image: redis:alpine
     container_name: redis_ratelimiter
     ports:
-      - '6380:6379'
+      - "6380:6379"
     volumes:
       - auth_redis_ratelimier_db:/data
   redis_email:
     image: redis:alpine
     container_name: redis_email
     ports:
-      - '6381:6379'
+      - "6381:6379"
     volumes:
       - auth_redis_email_db:/data
   redis_system:
     image: redis:alpine
     container_name: redis_system
     ports:
-      - '6382:6379'
+      - "6382:6379"
     volumes:
       - auth_redis_system:/data
+  redis_challenge:
+    image: redis:alpine
+    container_name: redis_challenge
+    ports:
+      - "6383:6379"
+    volumes:
+      - auth_redis_challenge:/data
 volumes:
   auth_postgres_db:
   auth_redis_session_db:
   auth_redis_ratelimier_db:
   auth_redis_email_db:
   auth_redis_system:
+  auth_redis_challenge:

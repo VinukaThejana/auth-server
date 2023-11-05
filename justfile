@@ -37,6 +37,9 @@ redis argv="session":
   elif [[ {{ argv }} == "ratelimiter" ]]
   then
     nc localhost 6380 -v
+  elif [[ {{ argv }} == "challenge" ]]
+  then
+    nc localhost 6383 -v
   else
     echo "Not a valid Redis database"
   fi

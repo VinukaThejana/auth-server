@@ -10,9 +10,10 @@ import (
 
 // Redis is used to manage al redis service connections
 type Redis struct {
-	Session *redis.Client
-	Email   *redis.Client
-	System  *redis.Client
+	Session   *redis.Client
+	Email     *redis.Client
+	System    *redis.Client
+	Challenge *redis.Client
 }
 
 func connect(url string) *redis.Client {
@@ -32,8 +33,9 @@ func connect(url string) *redis.Client {
 // InitRedis is a function to initialize all redis instances
 func (c *Connector) InitRedis(env *config.Env) {
 	c.R = &Redis{
-		Session: connect(env.RedisSessionURL),
-		Email:   connect(env.RedisEmailURL),
-		System:  connect(env.RedisSystemURL),
+		Session:   connect(env.RedisSessionURL),
+		Email:     connect(env.RedisEmailURL),
+		System:    connect(env.RedisSystemURL),
+		Challenge: connect(env.RedisChallengeURL),
 	}
 }
