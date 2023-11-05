@@ -48,3 +48,6 @@ test argv1 argv2 argument1="" argument2="" argument3="" argument4="":
   path="tests/{{ argv1 }}/{{ argv2 }}.lua"
 
   lua "$path" {{ argument1 }} {{ argument2 }} {{ argument3 }} {{ argument4 }}
+
+env:
+  doppler secrets download --no-file --format env > .env
