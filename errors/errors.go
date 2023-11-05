@@ -33,6 +33,7 @@ var (
 	ErrMemonicPhraseIsNotValid         = fmt.Errorf("memonic_phrase_not_valid")
 	ErrReAuthTokenNotPresent           = fmt.Errorf("reauth_token_not_present")
 	ErrVerifyYourEmailAddressFirst     = fmt.Errorf("verify_your_email_address_first")
+	ErrTokenExpired                    = fmt.Errorf("token_expired")
 	Okay                               = "okay"
 )
 
@@ -118,6 +119,10 @@ func ReAuthTokenNotPresent(c *fiber.Ctx) error {
 
 func VerifyYourEmailAddressFirt(c *fiber.Ctx) error {
 	return badrequest(c, ErrVerifyYourEmailAddressFirst)
+}
+
+func TokenExpired(c *fiber.Ctx) error {
+	return badrequest(c, ErrTokenExpired)
 }
 
 //revive:enable
