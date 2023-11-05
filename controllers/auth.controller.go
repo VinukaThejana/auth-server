@@ -569,3 +569,17 @@ func (a *Auth) ResetTwoFactorAuthentication(c *fiber.Ctx) error {
 		Status: errors.Okay,
 	})
 }
+
+// GetChallenge is a function that is used to get a crypographic challenge
+func (a *Auth) GetChallenge(c *fiber.Ctx) error {
+	challenge, err := utils.GenerateChallenge()
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":    errors.Okay,
+		"challenge": *challenge,
+	})
+}

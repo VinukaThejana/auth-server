@@ -102,6 +102,8 @@ func main() {
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
 		router.Post("/reauthenticate", authM.Check, authC.ReAuthenticatWithEmailAndPassword)
 
+		router.Get("/challenge", authC.GetChallenge)
+
 		router.Route("/otp", func(router fiber.Router) {
 			router.Post("/generate", authM.Check, authM.CheckReAuthToken, authC.CreateTOTP)
 			router.Post("/verify", authM.Check, authC.VerifyTOTP)
