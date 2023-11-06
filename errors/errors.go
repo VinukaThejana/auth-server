@@ -34,6 +34,7 @@ var (
 	ErrReAuthTokenNotPresent           = fmt.Errorf("reauth_token_not_present")
 	ErrVerifyYourEmailAddressFirst     = fmt.Errorf("verify_your_email_address_first")
 	ErrTokenExpired                    = fmt.Errorf("token_expired")
+	ErrPassKeyCannotBeVerified         = fmt.Errorf("passkey_cannot_be_verified")
 	Okay                               = "okay"
 )
 
@@ -123,6 +124,10 @@ func VerifyYourEmailAddressFirt(c *fiber.Ctx) error {
 
 func TokenExpired(c *fiber.Ctx) error {
 	return badrequest(c, ErrTokenExpired)
+}
+
+func PassKeyCannotBeVerified(c *fiber.Ctx) error {
+	return badrequest(c, ErrPassKeyCannotBeVerified)
 }
 
 //revive:enable
