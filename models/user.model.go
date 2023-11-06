@@ -16,6 +16,7 @@ type User struct {
 	PhotoURL         string     `gorm:"type:varchar(255);not null"`
 	Email            string     `gorm:"type:varchar(255);uniqueIndex;default:null"`
 	Password         string     `gorm:"type:varchar(255);default:null"`
+	PassKeys         []PassKeys `gorm:"foreignKey:UserID"`
 	OAuthConnections []OAuth    `gorm:"foreignKey:UserID"`
 	OTPMethod        []OTP      `gorm:"foreignKey:UserID"`
 	Sessions         []Sessions `gorm:"foreignKey:UserID"`

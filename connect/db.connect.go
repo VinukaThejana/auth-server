@@ -38,6 +38,7 @@ func (c *Connector) MigrateSchemaChanges(env *config.Env) {
 		models.Sessions{},
 		models.OTP{},
 		models.OAuth{},
+		models.PassKeys{},
 	}
 	if len(migrations) == 0 {
 		logger.Error(fmt.Errorf(" ❌ No items to migrate ! "))
