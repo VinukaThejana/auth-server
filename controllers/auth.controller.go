@@ -596,6 +596,7 @@ func (a *Auth) GetChallenge(c *fiber.Ctx) error {
 		"challenge": *challenge,
 	})
 }
+
 // CreatePassKey is a function that is used to create a PassKey
 func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	user := session.Get(c)
@@ -723,5 +724,44 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(schemas.Res{
 		Status: errors.Okay,
+	})
+}
+
+// GetPassKeys is a function that is used to GetPasskey relevant to user
+func (a *Auth) GetPassKeys(c *fiber.Ctx) error {
+	type res struct {
+		Status   string            `json:"status"`
+		PassKeys []models.PassKeys `json:"passKeys"`
+	}
+
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(res{
+			Status:   errors.ErrInternalServerError.Error(),
+			PassKeys: []models.PassKeys{},
+		})
+	}
+
+	var passKeys []models.PassKeys
+	err = a.Conn.DB.Where(&models.PassKeys{
+		UserID: &userID,
+	}).Find(&passKeys).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusOK).JSON(res{
+				Status:   errors.Okay,
+				PassKeys: []models.PassKeys{},
+			})
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(res{
+		Status:   errors.Okay,
+		PassKeys: passKeys,
 	})
 }
