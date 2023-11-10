@@ -104,6 +104,8 @@ func main() {
 
 		router.Route("/passkeys", func(router fiber.Router) {
 			router.Get("/challenge", authC.GetChallenge)
+			router.Post("/create", authM.Check, authC.CreatePassKey)
+			router.Get("/get", authM.Check, authC.GetPassKeys)
 		})
 
 		router.Route("/otp", func(router fiber.Router) {
