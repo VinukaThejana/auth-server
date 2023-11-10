@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -17,6 +21,7 @@ import (
 	"github.com/VinukaThejana/auth/utils"
 	"github.com/VinukaThejana/auth/validate"
 	"github.com/VinukaThejana/go-utils/logger"
+	"github.com/dvsekhvalnov/jose2go/base64url"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -589,5 +594,134 @@ func (a *Auth) GetChallenge(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":    errors.Okay,
 		"challenge": *challenge,
+	})
+}
+// CreatePassKey is a function that is used to create a PassKey
+func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var payload struct {
+		Name string              `json:"name" validate:"required,min=3,max=100"`
+		Cred schemas.PassKeyCred `json:"cred" validate:"required"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	err = v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	clientDataBytes, err := base64url.Decode(payload.Cred.Response.ClientDataJSON)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var clientData schemas.PasskeysClientData
+	err = json.Unmarshal(clientDataBytes, &clientData)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	val := a.Conn.R.Challenge.Get(context.Background(), clientData.Challenge).Val()
+	if val == "" {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	cred := schemas.PassKeyCred{
+		ID:    payload.Cred.ID,
+		RawID: payload.Cred.RawID,
+		Type:  payload.Cred.Type,
+		Response: struct {
+			AttestationObject string        "json:\"attestationObject\" validate:\"required\""
+			ClientDataJSON    string        "json:\"clientDataJSON\" validate:\"required\""
+			Transports        []interface{} "json:\"transports\""
+		}{
+			ClientDataJSON:    payload.Cred.Response.ClientDataJSON,
+			Transports:        payload.Cred.Response.Transports,
+			AttestationObject: payload.Cred.Response.AttestationObject,
+		},
+	}
+	credStr, err := json.Marshal(cred)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/webauthn/register", a.Env.FrontendURL), bytes.NewBuffer([]byte(
+		fmt.Sprintf(`{"challenge":"%s","cred":%s }`, clientData.Challenge, credStr),
+	)))
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		IsValid             bool         `json:"isValid"`
+		CredentialID        *string      `json:"credentialID"`
+		CredentialPublicKey *string      `json:"credentialPublicKey"`
+		Err                 *interface{} `json:"err"`
+	}
+
+	bodyC, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = json.Unmarshal(bodyC, &body)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	if body.CredentialID == nil || body.CredentialPublicKey == nil {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	passKey := models.PassKeys{
+		Name:      payload.Name,
+		UserID:    &userID,
+		PassKeyID: *body.CredentialID,
+		PublicKey: *body.CredentialPublicKey,
+	}
+
+	err = a.Conn.DB.Create(passKey).Error
+	if err != nil {
+		if ok := (errors.CheckDBError{}.DuplicateKey(err)); ok {
+			return errors.PassKeyAlreadyCreated(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
 	})
 }
