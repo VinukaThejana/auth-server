@@ -7,4 +7,5 @@ type PassKeys struct {
 	PassKeyID string     `gorm:"primary_key"`
 	UserID    *uuid.UUID `gorm:"type:uuid;primary_key"`
 	PublicKey string     `gorm:"unique;not null"`
+	Name      string     `gorm:"not null"`
 }
