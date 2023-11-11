@@ -765,3 +765,40 @@ func (a *Auth) GetPassKeys(c *fiber.Ctx) error {
 		PassKeys: passKeys,
 	})
 }
+
+// EditPassKey is a function that is used to change a passkey name
+func (a *Auth) EditPassKey(c *fiber.Ctx) error {
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var payload struct {
+		PassKeyID string `json:"passKeyID" validate:"required"`
+		NewName   string `json:"newName" validate:"required,min=3,max=200"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = a.Conn.DB.Where(&models.PassKeys{
+		UserID:    &userID,
+		PassKeyID: payload.PassKeyID,
+	}).Update("name", payload.NewName).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.PassKeyOfGivenIDNotFound(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
+}
