@@ -776,8 +776,14 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 	}
 
 	var payload struct {
-		PassKeyID string `json:"passKeyID" validate:"required"`
+		PassKeyID string `json:"passKeyID" validate:"required,min=2"`
 		NewName   string `json:"newName" validate:"required,min=3,max=200"`
+	}
+
+	v := validator.New()
+	err = v.Struct(payload)
+	if err != nil {
+		return errors.BadRequest(c)
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
@@ -785,14 +791,52 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	if payload.PassKeyID == "" || payload.NewName == "" {
-		return errors.BadRequest(c)
-	}
-
 	err = a.Conn.DB.Model(&models.PassKeys{}).Where(&models.PassKeys{
 		UserID:    &userID,
 		PassKeyID: payload.PassKeyID,
 	}).Update("name", payload.NewName).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.PassKeyOfGivenIDNotFound(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
+}
+
+// DeletePassKey is a function that is used to delete a passkey
+func (a *Auth) DeletePassKey(c *fiber.Ctx) error {
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var payload struct {
+		PassKeyID string `json:"passKeyID" validate:"required,min=2"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	err = v.Struct(payload)
+	if err != nil {
+		return errors.BadRequest(c)
+	}
+
+	err = a.Conn.DB.Delete(&models.PassKeys{
+		PassKeyID: payload.PassKeyID,
+		UserID:    &userID,
+	}).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return errors.PassKeyOfGivenIDNotFound(c)
