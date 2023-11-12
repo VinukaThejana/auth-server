@@ -785,7 +785,11 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	err = a.Conn.DB.Where(&models.PassKeys{
+	if payload.PassKeyID == "" || payload.NewName == "" {
+		return errors.BadRequest(c)
+	}
+
+	err = a.Conn.DB.Model(&models.PassKeys{}).Where(&models.PassKeys{
 		UserID:    &userID,
 		PassKeyID: payload.PassKeyID,
 	}).Update("name", payload.NewName).Error
