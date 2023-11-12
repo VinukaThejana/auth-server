@@ -607,8 +607,8 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	}
 
 	var payload struct {
-		Name string              `json:"name" validate:"required,min=3,max=100"`
-		Cred schemas.PassKeyCred `json:"cred" validate:"required"`
+		Name string                          `json:"name" validate:"required,min=3,max=100"`
+		Cred schemas.PassKeyCredWhenCreating `json:"cred" validate:"required"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
@@ -641,7 +641,7 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 		return errors.PassKeyCannotBeVerified(c)
 	}
 
-	cred := schemas.PassKeyCred{
+	cred := schemas.PassKeyCredWhenCreating{
 		ID:    payload.Cred.ID,
 		RawID: payload.Cred.RawID,
 		Type:  payload.Cred.Type,

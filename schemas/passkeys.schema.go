@@ -2,6 +2,8 @@ package schemas
 
 // PassKeyCred struct conatins the passkeys credentials received from the frontend
 type PassKeyCred struct {
+// PassKeyCredWhenCreating struct conatins the passkeys credentials received from the frontend when creating the passkey
+type PassKeyCredWhenCreating struct {
 	ClientExtensionResults  interface{} `json:"clientExtensionResults"`
 	AuthenticatorAttachment interface{} `json:"authenticatorAttachment"`
 	ID                      string      `json:"id"`
