@@ -8,4 +8,5 @@ type PassKeys struct {
 	UserID    *uuid.UUID `gorm:"type:uuid;primary_key"`
 	PublicKey string     `gorm:"unique;not null"`
 	Name      string     `gorm:"not null"`
+	Count     int        `gorm:"not null"`
 }

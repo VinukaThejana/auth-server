@@ -710,6 +710,7 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 		UserID:    &userID,
 		PassKeyID: *body.CredentialID,
 		PublicKey: *body.CredentialPublicKey,
+		Count:     0,
 	}
 
 	err = a.Conn.DB.Create(passKey).Error
