@@ -105,6 +105,7 @@ func main() {
 		router.Route("/passkeys", func(router fiber.Router) {
 			router.Get("/challenge", authC.GetChallenge)
 			router.Post("/create", authM.Check, authC.CreatePassKey)
+			router.Post("/login", authC.LoginWithPassKey)
 			router.Get("/get", authM.Check, authC.GetPassKeys)
 			router.Post("/edit", authM.Check, authC.EditPassKey)
 			router.Post("/delete", authM.Check, authC.DeletePassKey)

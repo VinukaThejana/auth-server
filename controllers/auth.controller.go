@@ -728,6 +728,223 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	})
 }
 
+// LoginWithPassKey is a function that is used to login with the PassKey
+func (a *Auth) LoginWithPassKey(c *fiber.Ctx) error {
+	var payload struct {
+		Cred schemas.PassKeyCredWhenLogginIn `json:"cred" validate:"required"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	userID, err := uuid.Parse(payload.Cred.Response.UserHandle)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	clientDataBytes, err := base64url.Decode(payload.Cred.Response.ClientDataJSON)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var clientData schemas.PasskeysClientData
+	err = json.Unmarshal(clientDataBytes, &clientData)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	val := a.Conn.R.Challenge.Get(context.Background(), clientData.Challenge).Val()
+	if val == "" {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	cred := schemas.PassKeyCredWhenLogginIn{
+		ID:                      payload.Cred.ID,
+		RawID:                   payload.Cred.RawID,
+		Type:                    payload.Cred.Type,
+		ClientExtensionResults:  payload.Cred.ClientExtensionResults,
+		AuthenticatorAttachment: payload.Cred.AuthenticatorAttachment,
+		Response: struct {
+			AuthenticatorData string "json:\"authenticatorData\" validate:\"required\""
+			ClientDataJSON    string "json:\"clientDataJSON\" validate:\"required\""
+			Signature         string "json:\"signature\" validate:\"required\""
+			UserHandle        string "json:\"userHandle\" validate:\"required\""
+		}{
+			AuthenticatorData: payload.Cred.Response.AuthenticatorData,
+			ClientDataJSON:    payload.Cred.Response.ClientDataJSON,
+			Signature:         payload.Cred.Response.Signature,
+			UserHandle:        payload.Cred.Response.UserHandle,
+		},
+	}
+
+	credStr, err := json.Marshal(cred)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var passKey models.PassKeys
+	err = a.Conn.DB.Where(&models.PassKeys{
+		UserID:    &userID,
+		PassKeyID: cred.ID,
+	}).First(&passKey).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.PassKeyOfGivenIDNotFound(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	passKeyStr, err := json.Marshal(passKey)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/webauthn/validate", a.Env.FrontendURL), bytes.NewBuffer([]byte(
+		fmt.Sprintf(`{"challenge":"%s","cred":%s, "passKey": %s }`, clientData.Challenge, credStr, passKeyStr),
+	)))
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		IsValid    bool         `json:"isValid"`
+		NewCounter *int         `json:"newCounter"`
+		Err        *interface{} `json:"err"`
+	}
+
+	bodyC, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = json.Unmarshal(bodyC, &body)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if body.Err != nil {
+			logger.Error(fmt.Errorf(fmt.Sprint(*body.Err)))
+		}
+		return errors.InternalServerErr(c)
+	}
+
+	if !body.IsValid || body.NewCounter == nil {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	passKey.Count = *body.NewCounter
+
+	err = a.Conn.DB.Save(passKey).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var user models.User
+	err = a.Conn.DB.Where(&models.User{
+		ID: &userID,
+	}).First(&user).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	refreshTokenS := token.RefreshToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: *user.ID,
+	}
+	accessTokenS := token.AccessToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: *user.ID,
+	}
+	sessionTokenS := token.SessionToken{
+		Conn: a.Conn,
+		Env:  a.Env,
+	}
+
+	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{})
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the refresh token")
+		return errors.InternalServerErr(c)
+	}
+	accessTokenD, err := accessTokenS.Create(refreshTokenD.TokenUUID)
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the access token")
+		return errors.InternalServerErr(c)
+	}
+	sessionTokenD, err := sessionTokenS.Create(user)
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the session token")
+		return errors.InternalServerErr(c)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    *accessTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    *refreshTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
+		Domain:   "localhost",
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    *sessionTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": errors.Okay,
+		"user":   schemas.FilterUser(user),
+	})
+}
+
 // GetPassKeys is a function that is used to GetPasskey relevant to user
 func (a *Auth) GetPassKeys(c *fiber.Ctx) error {
 	type res struct {
