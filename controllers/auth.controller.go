@@ -698,10 +698,10 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.PassKeyCannotBeVerified(c)
+		return errors.InternalServerErr(c)
 	}
 
-	if body.CredentialID == nil || body.CredentialPublicKey == nil {
+	if body.CredentialID == nil || body.CredentialPublicKey == nil || !body.IsValid {
 		return errors.PassKeyCannotBeVerified(c)
 	}
 
