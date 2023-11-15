@@ -16,6 +16,7 @@ import (
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // Details is a struct that contains the data that need to be used when creating tokens
@@ -118,6 +119,23 @@ func (r *RefreshToken) Get(tokenStr string) (token *Details, err error) {
 		if err == errors.ErrUnauthorized {
 			return nil, errors.ErrRefreshTokenExpired
 		}
+		return nil, err
+	}
+
+	tokenUUID, err := uuid.Parse(tokenDetails.TokenUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	var session models.Sessions
+	err = r.Conn.DB.Where(&models.Sessions{
+		ID: &tokenUUID,
+	}).First(&session).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.ErrRefreshTokenExpired
+		}
+
 		return nil, err
 	}
 
