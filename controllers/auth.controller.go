@@ -323,6 +323,58 @@ func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 	})
 }
 
+// Logout is a function that is used to logout a user by clearing the access_token, refresh_token and the session token
+func (a *Auth) Logout(c *fiber.Ctx) error {
+	refreshTokenC := session.GetRefreshToken(c)
+	user := session.Get(c)
+
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	refreshTokenS := token.RefreshToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: userID,
+	}
+
+	refreshToken, err := refreshTokenS.Get(refreshTokenC)
+	if err != nil {
+		if err == errors.ErrRefreshTokenExpired {
+			return errors.RefreshTokenExpired(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	tokenUUID, err := uuid.Parse(refreshToken.TokenUUID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = a.Conn.DB.Where(&models.Sessions{
+		ID:     &tokenUUID,
+		UserID: &userID,
+	}).Delete(&models.Sessions{}).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	tokenS := services.Token{
+		Conn: a.Conn,
+	}
+	tokenS.DeleteCookies(c)
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
+	})
+}
+
 // CreateTOTP is a function that is used to create the user OTP
 func (a *Auth) CreateTOTP(c *fiber.Ctx) error {
 	user := session.Get(c)

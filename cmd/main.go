@@ -104,6 +104,7 @@ func main() {
 	app.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
 		router.Post("/login", authC.LoginWEmailAndPassword)
+		router.Delete("/logout", authM.CheckRefreshToken, authC.Logout)
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
 		router.Post("/reauthenticate", authM.Check, authC.ReAuthenticatWithEmailAndPassword)
 
