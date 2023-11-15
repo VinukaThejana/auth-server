@@ -295,6 +295,15 @@ func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 
 	tokenDetails, err := accessTokenS.Create(refreshToken.TokenUUID)
 	if err != nil {
+		if err == errors.ErrRefreshTokenExpired {
+			tokenS := services.Token{
+				Conn: a.Conn,
+			}
+
+			tokenS.DeleteCookies(c)
+			return errors.RefreshTokenExpired(c)
+		}
+
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
