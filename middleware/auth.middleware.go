@@ -19,6 +19,24 @@ type Auth struct {
 	Env  *config.Env
 }
 
+// CheckAdmin is a function that is used to check wether the user is a Admin user
+func (a *Auth) CheckAdmin(c *fiber.Ctx) error {
+	var adminToken string
+	authorization := c.Get("Authorization")
+
+	if strings.HasPrefix(authorization, "Bearer ") {
+		adminToken = strings.TrimPrefix(authorization, "Bearer ")
+	} else {
+		return errors.Unauthorized(c)
+	}
+
+	if adminToken != a.Env.AdminSecret {
+		return errors.Unauthorized(c)
+	}
+
+	return c.Next()
+}
+
 // Check is a function that is used to check wether the user is authenticated
 func (a *Auth) Check(c *fiber.Ctx) error {
 	var accessToken string
