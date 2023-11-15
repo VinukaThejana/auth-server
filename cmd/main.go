@@ -28,6 +28,7 @@ var (
 	authC   controllers.Auth
 	emailC  controllers.Email
 	userC   controllers.User
+	adminC  controllers.Admin
 )
 
 func init() {
@@ -56,6 +57,10 @@ func init() {
 		Env:  &env,
 	}
 	userC = controllers.User{
+		Conn: &conn,
+		Env:  &env,
+	}
+	adminC = controllers.Admin{
 		Conn: &conn,
 		Env:  &env,
 	}
@@ -115,6 +120,12 @@ func main() {
 			router.Post("/generate", authM.Check, authM.CheckReAuthToken, authC.CreateTOTP)
 			router.Post("/verify", authM.Check, authC.VerifyTOTP)
 			router.Post("/reset", authC.ResetTwoFactorAuthentication)
+		})
+	})
+
+	app.Route("/admin", func(router fiber.Router) {
+		router.Route("/delete", func(router fiber.Router) {
+			router.Get("/sessions", authM.CheckAdmin, adminC.DeleteExpiredSessions)
 		})
 	})
 
