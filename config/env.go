@@ -33,6 +33,7 @@ type Env struct {
 	ResendAPIKey             string        `mapstructure:"RESEND_API_KEY" validate:"required"`
 	FrontendHostname         string        `mapstructure:"FRONTEND_HOSTNAME" validate:"required,hostname"`
 	FrontendURL              string        `mapstructure:"FRONTEND_URL" validate:"required,url"`
+	AdminSecret              string        `mapstructure:"ADMIN_SECRET" validate:"required"`
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
