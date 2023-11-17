@@ -19,9 +19,10 @@ type Token struct {
 }
 
 // DeleteTokenData is a function to delete the token data from the session database and the relataional database
-func (t *Token) DeleteTokenData(refreshTokenUUID uuid.UUID) error {
+func (t *Token) DeleteTokenData(userID, refreshTokenUUID uuid.UUID) error {
 	err := t.Conn.DB.Delete(&models.Sessions{
-		ID: &refreshTokenUUID,
+		ID:     &refreshTokenUUID,
+		UserID: &userID,
 	}).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
