@@ -356,19 +356,16 @@ func (a *Auth) Logout(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	err = a.Conn.DB.Where(&models.Sessions{
-		ID:     &tokenUUID,
-		UserID: &userID,
-	}).Delete(&models.Sessions{}).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
-
 	tokenS := services.Token{
 		Conn: a.Conn,
 	}
+
 	tokenS.DeleteCookies(c)
+	err = tokenS.DeleteTokenData(tokenUUID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
 
 	return c.Status(fiber.StatusOK).JSON(schemas.Res{
 		Status: errors.Okay,
