@@ -361,7 +361,7 @@ func (a *Auth) Logout(c *fiber.Ctx) error {
 	}
 
 	tokenS.DeleteCookies(c)
-	err = tokenS.DeleteTokenData(tokenUUID)
+	err = tokenS.DeleteTokenData(userID, tokenUUID)
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)
