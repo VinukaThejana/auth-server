@@ -189,6 +189,17 @@ func (a *AccessToken) Create(refreshTokenUUID string) (tokenDetails *Details, er
 		return nil, err
 	}
 
+	ctx := context.TODO()
+
+	detailsStr := a.Conn.R.Session.Get(ctx, refreshTokenUUID).Val()
+	if detailsStr != "" {
+		var details schemas.RefreshTokenDetails
+		err := json.Unmarshal([]byte(detailsStr), &details)
+		if err == nil {
+			a.Conn.R.Session.Del(ctx, details.AccessTokenUUID)
+		}
+	}
+
 	tokenVal, err := json.Marshal(schemas.RefreshTokenDetails{
 		UserID:          a.UserID.String(),
 		AccessTokenUUID: tokenDetails.TokenUUID,
@@ -196,8 +207,6 @@ func (a *AccessToken) Create(refreshTokenUUID string) (tokenDetails *Details, er
 	if err != nil {
 		return nil, err
 	}
-
-	ctx := context.TODO()
 
 	ttl := a.Conn.R.Session.TTL(ctx, refreshTokenUUID).Val()
 	if ttl.Seconds() < 0 {
