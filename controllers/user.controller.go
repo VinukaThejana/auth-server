@@ -4,7 +4,9 @@ import (
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
+	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/services"
+	"github.com/VinukaThejana/auth/session"
 	"github.com/VinukaThejana/auth/validate"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/go-playground/validator/v10"
@@ -65,5 +67,22 @@ func (u *User) CheckUsername(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(res{
 		IsAvailable: isAvailable,
 		Status:      errors.Okay,
+	})
+}
+
+// GetLoggedInDevices is a function that is used to get logged in devices of the given user
+func (u *User) GetLoggedInDevices(c *fiber.Ctx) error {
+	user := session.Get(c)
+
+	var instances []models.Sessions
+	err := u.Conn.DB.Where("user_id = ?", user.ID).Find(&instances).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":   errors.Okay,
+		"sessions": instances,
 	})
 }

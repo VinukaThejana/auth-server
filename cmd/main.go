@@ -124,6 +124,10 @@ func main() {
 		})
 	})
 
+	app.Route("/user", func(router fiber.Router) {
+		router.Get("/devices", authM.Check, userC.GetLoggedInDevices)
+	})
+
 	app.Route("/admin", func(router fiber.Router) {
 		router.Route("/delete", func(router fiber.Router) {
 			router.Get("/sessions", authM.CheckAdmin, adminC.DeleteExpiredSessions)
