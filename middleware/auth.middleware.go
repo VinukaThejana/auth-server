@@ -152,6 +152,11 @@ func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
 		if ok := (errors.CheckTokenError{}.Expired(err)); ok {
 			return errors.Unauthorized(c)
 		}
+
+		if err == errors.ErrRefreshTokenExpired {
+			return errors.RefreshTokenExpired(c)
+		}
+
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
