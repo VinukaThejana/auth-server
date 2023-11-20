@@ -127,6 +127,7 @@ func main() {
 	app.Route("/user", func(router fiber.Router) {
 		router.Route("/devices", func(router fiber.Router) {
 			router.Get("/list", authM.Check, userC.GetLoggedInDevices)
+			router.Post("/remove", authM.Check, authM.CheckReAuthToken, userC.LogoutFromDevices)
 		})
 	})
 

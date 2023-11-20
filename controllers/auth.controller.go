@@ -453,7 +453,7 @@ func reauthenticate(c *fiber.Ctx, a *Auth, userID string) error {
 	})
 }
 
-// ReAuthenticatWithEmailAndPassword is a function that is used to reauthenticat the user with email and password
+// ReAuthenticatWithEmailAndPassword is a function that is used to reauthenticate the user with email and password
 func (a *Auth) ReAuthenticatWithEmailAndPassword(c *fiber.Ctx) error {
 	var payload struct {
 		Email    string `json:"email"`

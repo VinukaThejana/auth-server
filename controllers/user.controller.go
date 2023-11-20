@@ -1,16 +1,23 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
+	"github.com/VinukaThejana/auth/schemas"
 	"github.com/VinukaThejana/auth/services"
 	"github.com/VinukaThejana/auth/session"
 	"github.com/VinukaThejana/auth/validate"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // User is a struct that contains user controllers
@@ -84,5 +91,59 @@ func (u *User) GetLoggedInDevices(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":   errors.Okay,
 		"sessions": instances,
+	})
+}
+
+// LogoutFromDevices is a function that is used to logout from a given device
+func (u *User) LogoutFromDevices(c *fiber.Ctx) error {
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var payload struct {
+		ID string `json:"id"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	tokenUUID, err := uuid.Parse(payload.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	err = u.Conn.DB.Delete(&models.Sessions{
+		ID:     &tokenUUID,
+		UserID: &userID,
+	}).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.Unauthorized(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	ctx := context.TODO()
+
+	detailsStr := u.Conn.R.Session.GetDel(ctx, tokenUUID.String()).Val()
+	fmt.Printf("detailsStr: %v\n", detailsStr)
+	if detailsStr != "" {
+		var details schemas.RefreshTokenDetails
+		err = json.Unmarshal([]byte(detailsStr), &details)
+		if err == nil {
+			u.Conn.R.Session.Del(ctx, details.UserID)
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: errors.Okay,
 	})
 }
