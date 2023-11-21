@@ -204,11 +204,11 @@ func (a *Auth) GetUA(c *fiber.Ctx) error {
 	ua := c.Cookies("ua", "")
 	if ua == "" {
 		session.SaveUA(c, schemas.UADevice{
-			Vendor: "",
-			Model:  "",
+			Vendor: "unknown",
+			Model:  "unknown",
 		}, schemas.UAOS{
-			Name:    "",
-			Version: "",
+			Name:    "unknown",
+			Version: "unknown",
 		})
 		return c.Next()
 	}
@@ -217,11 +217,11 @@ func (a *Auth) GetUA(c *fiber.Ctx) error {
 	if err != nil {
 		logger.Error(err)
 		session.SaveUA(c, schemas.UADevice{
-			Vendor: "",
-			Model:  "",
+			Vendor: "unknown",
+			Model:  "unknown",
 		}, schemas.UAOS{
-			Name:    "",
-			Version: "",
+			Name:    "unknown",
+			Version: "unknown",
 		})
 		return c.Next()
 	}
@@ -235,11 +235,11 @@ func (a *Auth) GetUA(c *fiber.Ctx) error {
 	if err != nil {
 		logger.Error(err)
 		session.SaveUA(c, schemas.UADevice{
-			Vendor: "",
-			Model:  "",
+			Vendor: "unknown",
+			Model:  "unknown",
 		}, schemas.UAOS{
-			Name:    "",
-			Version: "",
+			Name:    "unknown",
+			Version: "unknown",
 		})
 		return c.Next()
 	}
