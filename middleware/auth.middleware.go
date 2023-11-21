@@ -1,14 +1,17 @@
 package middleware
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
+	"github.com/VinukaThejana/auth/schemas"
 	"github.com/VinukaThejana/auth/session"
 	"github.com/VinukaThejana/auth/token"
 	"github.com/VinukaThejana/go-utils/logger"
+	"github.com/dvsekhvalnov/jose2go/base64url"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -193,5 +196,54 @@ func (a *Auth) CheckReAuthToken(c *fiber.Ctx) error {
 		return errors.ReAuthTokenNotPresent(c)
 	}
 
+	return c.Next()
+}
+
+// GetUA is a function that is used to get User Agent details
+func (a *Auth) GetUA(c *fiber.Ctx) error {
+	ua := c.Cookies("ua", "")
+	if ua == "" {
+		session.SaveUA(c, schemas.UADevice{
+			Vendor: "",
+			Model:  "",
+		}, schemas.UAOS{
+			Name:    "",
+			Version: "",
+		})
+		return c.Next()
+	}
+
+	uaBytes, err := base64url.Decode(ua)
+	if err != nil {
+		logger.Error(err)
+		session.SaveUA(c, schemas.UADevice{
+			Vendor: "",
+			Model:  "",
+		}, schemas.UAOS{
+			Name:    "",
+			Version: "",
+		})
+		return c.Next()
+	}
+
+	var payload struct {
+		Device schemas.UADevice `json:"device"`
+		OS     schemas.UAOS     `json:"os"`
+	}
+
+	err = json.Unmarshal(uaBytes, &payload)
+	if err != nil {
+		logger.Error(err)
+		session.SaveUA(c, schemas.UADevice{
+			Vendor: "",
+			Model:  "",
+		}, schemas.UAOS{
+			Name:    "",
+			Version: "",
+		})
+		return c.Next()
+	}
+
+	session.SaveUA(c, payload.Device, payload.OS)
 	return c.Next()
 }

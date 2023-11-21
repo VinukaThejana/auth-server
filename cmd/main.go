@@ -103,7 +103,7 @@ func main() {
 
 	app.Route("/auth", func(router fiber.Router) {
 		router.Post("/register", authC.RegisterWEmailAndPassword)
-		router.Post("/login", authC.LoginWEmailAndPassword)
+		router.Post("/login", authM.GetUA, authC.LoginWEmailAndPassword)
 		router.Delete("/logout", authM.CheckRefreshToken, authC.Logout)
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
 		router.Post("/reauthenticate", authM.Check, authC.ReAuthenticatWithEmailAndPassword)
@@ -111,7 +111,7 @@ func main() {
 		router.Route("/passkeys", func(router fiber.Router) {
 			router.Get("/challenge", authC.GetChallenge)
 			router.Post("/create", authM.Check, authC.CreatePassKey)
-			router.Post("/login", authC.LoginWithPassKey)
+			router.Post("/login", authM.GetUA, authC.LoginWithPassKey)
 			router.Get("/get", authM.Check, authC.GetPassKeys)
 			router.Post("/edit", authM.Check, authC.EditPassKey)
 			router.Post("/delete", authM.Check, authC.DeletePassKey)

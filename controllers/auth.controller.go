@@ -208,7 +208,15 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 		Env:  a.Env,
 	}
 
-	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{})
+	ua := session.GetUA(c)
+
+	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{
+		IPAddress:    c.IP(),
+		DeviceVendor: ua.Device.Vendor,
+		DeviceModel:  ua.Device.Model,
+		OSName:       ua.OS.Name,
+		OSVersion:    ua.OS.Version,
+	})
 	if err != nil {
 		logger.ErrorWithMsg(err, "Failed to create the refresh token")
 		return errors.InternalServerErr(c)
@@ -951,7 +959,15 @@ func (a *Auth) LoginWithPassKey(c *fiber.Ctx) error {
 		Env:  a.Env,
 	}
 
-	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{})
+	ua := session.GetUA(c)
+
+	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{
+		IPAddress:    c.IP(),
+		DeviceVendor: ua.Device.Vendor,
+		DeviceModel:  ua.Device.Model,
+		OSName:       ua.OS.Name,
+		OSVersion:    ua.OS.Version,
+	})
 	if err != nil {
 		logger.ErrorWithMsg(err, "Failed to create the refresh token")
 		return errors.InternalServerErr(c)

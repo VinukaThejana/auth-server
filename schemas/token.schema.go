@@ -8,8 +8,10 @@ type RefreshTokenDetails struct {
 
 // RefreshTokenMetadata is a struct that contains details of the device that created the refresh token
 type RefreshTokenMetadata struct {
-	IPAddress string
-	Location  string
-	Device    string
-	OS        string
+	IPAddress    string
+	Location     string
+	DeviceVendor string
+	DeviceModel  string
+	OSName       string
+	OSVersion    string
 }

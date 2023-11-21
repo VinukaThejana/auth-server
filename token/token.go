@@ -83,13 +83,16 @@ func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetai
 	}
 
 	err = r.Conn.DB.Create(&models.Sessions{
-		ID:        &tokenUUID,
-		UserID:    &r.UserID,
-		IPAddress: metadata.IPAddress,
-		Location:  metadata.Location,
-		Device:    metadata.Device,
-		LoginAt:   now,
-		ExpiresAt: *tokenDetails.ExpiresIn,
+		ID:           &tokenUUID,
+		UserID:       &r.UserID,
+		IPAddress:    metadata.IPAddress,
+		Location:     metadata.Location,
+		DeviceVendor: metadata.DeviceVendor,
+		DeviceModel:  metadata.DeviceModel,
+		OSName:       metadata.OSName,
+		OSVersion:    metadata.OSVersion,
+		LoginAt:      now,
+		ExpiresAt:    *tokenDetails.ExpiresIn,
 	}).Error
 	if err != nil {
 		return nil, err
