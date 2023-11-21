@@ -14,7 +14,7 @@ and with also support for 2 Factor authentication
 
 - [API Documentation](https://documenter.getpostman.com/view/26265282/2s9YeAAaD4) 
 
-- [Frontend Implementation](https://github.com/VinukaThejana/auth-web)
+- [Frontend Implementation](https://github.com/VinukaThejana/auth-website)
 
 ## How to get started ?
 
