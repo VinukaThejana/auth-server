@@ -63,13 +63,7 @@ func GetAccessToken(c *fiber.Ctx) string {
 }
 
 // SaveUA is a function that is used to save user agent details
-func SaveUA(c *fiber.Ctx, Device struct {
-	Vendor string
-	Model  string
-}, OS struct {
-	Name    string
-	Version string
-},
+func SaveUA(c *fiber.Ctx, Device schemas.UADevice, OS schemas.UAOS,
 ) {
 	c.Locals("device_vendor", Device.Vendor)
 	c.Locals("device_model", Device.Model)
@@ -79,36 +73,18 @@ func SaveUA(c *fiber.Ctx, Device struct {
 
 // GetUA is a function that is used to get user agent details
 func GetUA(c *fiber.Ctx) struct {
-	Device struct {
-		Vendor string
-		Model  string
-	}
-	OS struct {
-		Name    string
-		Version string
-	}
+	Device schemas.UADevice
+	OS     schemas.UAOS
 } {
 	return struct {
-		Device struct {
-			Vendor string
-			Model  string
-		}
-		OS struct {
-			Name    string
-			Version string
-		}
+		Device schemas.UADevice
+		OS     schemas.UAOS
 	}{
-		Device: struct {
-			Vendor string
-			Model  string
-		}{
+		Device: schemas.UADevice{
 			Vendor: c.Locals("device_vendor").(string),
 			Model:  c.Locals("device_model").(string),
 		},
-		OS: struct {
-			Name    string
-			Version string
-		}{
+		OS: schemas.UAOS{
 			Name:    c.Locals("os_name").(string),
 			Version: c.Locals("os_version").(string),
 		},
