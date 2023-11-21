@@ -10,13 +10,13 @@ An authentication server with all modern authentication methods such as,
 
 and with also support for 2 Factor authentication
 
-# Links
+## Links
 
 - [API Documentation](https://documenter.getpostman.com/view/26265282/2s9YeAAaD4) 
 
 - [Frontend Implementation](https://github.com/VinukaThejana/auth-web)
 
-# How to get started ?
+## How to get started ?
 
 - Create a .env file in the below given format
 ```
