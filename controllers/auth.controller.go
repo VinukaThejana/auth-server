@@ -463,11 +463,15 @@ func reauthenticate(c *fiber.Ctx, a *Auth, userID string) error {
 
 // ReAuthenticatWithEmailAndPassword is a function that is used to reauthenticate the user with email and password
 func (a *Auth) ReAuthenticatWithEmailAndPassword(c *fiber.Ctx) error {
+	user := session.Get(c)
+	userID, err := uuid.Parse(user.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
 	var payload struct {
-		Email    string `json:"email"`
-		Username string `json:"username"`
 		Password string `json:"password" validate:"required,min=8,max=200,validate_password"`
-		Validate string `validate:"validate_login"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
@@ -477,8 +481,7 @@ func (a *Auth) ReAuthenticatWithEmailAndPassword(c *fiber.Ctx) error {
 
 	v := validator.New()
 	v.RegisterValidation("validate_password", validate.Password)
-	v.RegisterValidation("validate_login", validate.LoginWithEmailOrUsernameAndPassword)
-	err := v.Struct(payload)
+	err = v.Struct(payload)
 	if err != nil {
 		logger.Error(err)
 		return errors.BadRequest(c)
@@ -488,32 +491,23 @@ func (a *Auth) ReAuthenticatWithEmailAndPassword(c *fiber.Ctx) error {
 		Conn: a.Conn,
 	}
 
-	var user *models.User
-	var custom error
-
-	if payload.Email != "" {
-		user, err = userS.GetUserWithEmail(payload.Email)
-		custom = errors.NoAccountWithEmail(c)
-	} else {
-		user, err = userS.GetUserWithUsername(payload.Username)
-		custom = errors.NoAccountWithUsername(c)
-	}
+	userM, err := userS.GetUserWithID(userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return custom
+			return errors.BadRequest(c)
 		}
 
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(payload.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(userM.Password), []byte(payload.Password))
 	if err != nil {
 		logger.Error(err)
 		return errors.InCorrectCredentials(c)
 	}
 
-	return reauthenticate(c, a, user.ID.String())
+	return reauthenticate(c, a, user.ID)
 }
 
 // VerifyTOTP is a function that is used to verify the TOTP token
