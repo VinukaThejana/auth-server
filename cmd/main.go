@@ -106,7 +106,9 @@ func main() {
 		router.Post("/login", authM.GetUA, authC.LoginWEmailAndPassword)
 		router.Delete("/logout", authM.CheckRefreshToken, authC.Logout)
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
-		router.Post("/reauthenticate", authM.Check, authC.ReAuthenticatWithEmailAndPassword)
+		router.Route("/reauthenticate", func(router fiber.Router) {
+			router.Post("/password", authM.Check, authC.ReAuthenticateWithPassword)
+		})
 
 		router.Route("/passkeys", func(router fiber.Router) {
 			router.Get("/challenge", authC.GetChallenge)

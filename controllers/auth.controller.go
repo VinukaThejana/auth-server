@@ -461,8 +461,8 @@ func reauthenticate(c *fiber.Ctx, a *Auth, userID string) error {
 	})
 }
 
-// ReAuthenticatWithEmailAndPassword is a function that is used to reauthenticate the user with email and password
-func (a *Auth) ReAuthenticatWithEmailAndPassword(c *fiber.Ctx) error {
+// ReAuthenticateWithPassword is a function that is used to reauthenticate the user with email and password
+func (a *Auth) ReAuthenticateWithPassword(c *fiber.Ctx) error {
 	user := session.Get(c)
 	userID, err := uuid.Parse(user.ID)
 	if err != nil {
