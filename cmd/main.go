@@ -108,6 +108,7 @@ func main() {
 		router.Post("/refresh", authM.CheckRefreshToken, authC.RefreshAccessToken)
 		router.Route("/reauthenticate", func(router fiber.Router) {
 			router.Post("/password", authM.Check, authC.ReAuthenticateWithPassword)
+			router.Post("/passkey", authM.Check, authC.ReAuthenticateWithPassKey)
 		})
 
 		router.Route("/passkeys", func(router fiber.Router) {

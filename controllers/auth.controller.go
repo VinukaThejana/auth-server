@@ -510,6 +510,170 @@ func (a *Auth) ReAuthenticateWithPassword(c *fiber.Ctx) error {
 	return reauthenticate(c, a, user.ID)
 }
 
+// ReAuthenticateWithPassKey is a function that is used to reauthenticate with the users passkey
+func (a *Auth) ReAuthenticateWithPassKey(c *fiber.Ctx) error {
+	usera := session.Get(c)
+
+	var payload struct {
+		Cred schemas.PassKeyCredWhenLogginIn `json:"cred" validate:"required"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	userID, err := uuid.Parse(payload.Cred.Response.UserHandle)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if userID.String() != usera.ID {
+		return errors.BadRequest(c)
+	}
+
+	clientDataBytes, err := base64url.Decode(payload.Cred.Response.ClientDataJSON)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var clientData schemas.PasskeysClientData
+	err = json.Unmarshal(clientDataBytes, &clientData)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	val := a.Conn.R.Challenge.Get(context.Background(), clientData.Challenge).Val()
+	if val == "" {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	cred := schemas.PassKeyCredWhenLogginIn{
+		ID:                      payload.Cred.ID,
+		RawID:                   payload.Cred.RawID,
+		Type:                    payload.Cred.Type,
+		ClientExtensionResults:  payload.Cred.ClientExtensionResults,
+		AuthenticatorAttachment: payload.Cred.AuthenticatorAttachment,
+		Response: struct {
+			AuthenticatorData string "json:\"authenticatorData\" validate:\"required\""
+			ClientDataJSON    string "json:\"clientDataJSON\" validate:\"required\""
+			Signature         string "json:\"signature\" validate:\"required\""
+			UserHandle        string "json:\"userHandle\" validate:\"required\""
+		}{
+			AuthenticatorData: payload.Cred.Response.AuthenticatorData,
+			ClientDataJSON:    payload.Cred.Response.ClientDataJSON,
+			Signature:         payload.Cred.Response.Signature,
+			UserHandle:        payload.Cred.Response.UserHandle,
+		},
+	}
+
+	credStr, err := json.Marshal(cred)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	var passKey models.PassKeys
+	err = a.Conn.DB.Where(&models.PassKeys{
+		UserID:    &userID,
+		PassKeyID: cred.ID,
+	}).First(&passKey).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.PassKeyOfGivenIDNotFound(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	passKeyStr, err := json.Marshal(passKey)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/webauthn/validate", a.Env.FrontendURL), bytes.NewBuffer([]byte(
+		fmt.Sprintf(`{"challenge":"%s","cred":%s, "passKey": %s }`, clientData.Challenge, credStr, passKeyStr),
+	)))
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	defer resp.Body.Close()
+
+	var body struct {
+		IsValid    bool         `json:"isValid"`
+		NewCounter *int         `json:"newCounter"`
+		Err        *interface{} `json:"err"`
+	}
+
+	bodyC, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = json.Unmarshal(bodyC, &body)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if body.Err != nil {
+			logger.Error(fmt.Errorf(fmt.Sprint(*body.Err)))
+		}
+		return errors.InternalServerErr(c)
+	}
+
+	if !body.IsValid || body.NewCounter == nil {
+		return errors.PassKeyCannotBeVerified(c)
+	}
+
+	passKey.Count = *body.NewCounter
+
+	err = a.Conn.DB.Save(passKey).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	userS := services.User{
+		Conn: a.Conn,
+	}
+
+	userM, err := userS.GetUserWithID(userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.BadRequest(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return reauthenticate(c, a, userM.ID.String())
+}
+
 // VerifyTOTP is a function that is used to verify the TOTP token
 func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 	user := session.Get(c)
