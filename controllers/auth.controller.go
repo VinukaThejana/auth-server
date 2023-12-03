@@ -726,11 +726,50 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 			errors.InternalServerErr(c)
 		}
 
-		err = a.Conn.DB.Model(&models.User{}).Where("id = ?", userID.String()).Update("two_factor_enabled", true).Error
+		userS := services.User{
+			Conn: a.Conn,
+		}
+
+		user, err := userS.GetUserWithID(userID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.Unauthorized(c)
+			}
+
+			logger.Error(err)
+			return errors.InternalServerErr(c)
+		}
+		if user == nil {
+			return errors.BadRequest(c)
+		}
+
+		user.TwoFactorEnabled = true
+		err = a.Conn.DB.Save(&user).Error
 		if err != nil {
 			logger.Error(err)
 			return errors.InternalServerErr(c)
 		}
+
+		sessionTokenS := token.SessionToken{
+			Conn: a.Conn,
+			Env:  a.Env,
+		}
+
+		sessionTokenD, err := sessionTokenS.Create(*user)
+		if err != nil {
+			logger.ErrorWithMsg(err, "Failed to create the session token")
+			return errors.InternalServerErr(c)
+		}
+
+		c.Cookie(&fiber.Cookie{
+			Name:     "session",
+			Value:    *sessionTokenD.Token,
+			Path:     "/",
+			MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+			Secure:   false,
+			HTTPOnly: false,
+			Domain:   "localhost",
+		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -797,11 +836,39 @@ func (a *Auth) ResetTwoFactorAuthentication(c *fiber.Ctx) error {
 		return errors.MemonicPhraseIsNotMatching(c)
 	}
 
+	user.TwoFactorEnabled = false
+	err = a.Conn.DB.Save(user).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
 	err = a.Conn.DB.Delete(&otp).Error
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
+
+	sessionTokenS := token.SessionToken{
+		Conn: a.Conn,
+		Env:  a.Env,
+	}
+
+	sessionTokenD, err := sessionTokenS.Create(user)
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the session token")
+		return errors.InternalServerErr(c)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    *sessionTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
 
 	return c.Status(fiber.StatusOK).JSON(schemas.Res{
 		Status: errors.Okay,
