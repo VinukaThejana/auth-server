@@ -728,7 +728,7 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 
 		err = a.Conn.DB.Where(&models.User{
 			ID: &userID,
-		}).Update("two_factor_enabled", true).Error
+		}).Update("two_factor_enabled = ?", true).Error
 		if err != nil {
 			logger.Error(err)
 			return errors.InternalServerErr(c)
