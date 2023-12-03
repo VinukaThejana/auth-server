@@ -4,6 +4,7 @@ package errors
 import (
 	errs "errors"
 	"fmt"
+	"time"
 
 	"github.com/VinukaThejana/auth/schemas"
 	"github.com/gofiber/fiber/v2"
@@ -59,6 +60,12 @@ func Unauthorized(c *fiber.Ctx) error {
 }
 
 func AccessTokenExpired(c *fiber.Ctx) error {
+	expired := time.Now().Add(-time.Hour * 24)
+	c.Cookie(&fiber.Cookie{
+		Name:    "access_token",
+		Value:   "",
+		Expires: expired,
+	})
 	return unauthorized(c, ErrAccessTokenExpired)
 }
 
@@ -67,6 +74,12 @@ func AccessTokenNotProvided(c *fiber.Ctx) error {
 }
 
 func RefreshTokenExpired(c *fiber.Ctx) error {
+	expired := time.Now().Add(-time.Hour * 24)
+	c.Cookie(&fiber.Cookie{
+		Name:    "refresh_token",
+		Value:   "",
+		Expires: expired,
+	})
 	return unauthorized(c, ErrRefreshTokenExpired)
 }
 

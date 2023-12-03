@@ -143,6 +143,19 @@ func (u *User) LogoutFromDevices(c *fiber.Ctx) error {
 		}
 	}
 
+	var details schemas.RefreshTokenDetails
+	err = json.Unmarshal([]byte(detailsStr), &details)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = u.Conn.R.Session.Del(ctx, details.AccessTokenUUID).Err()
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
 	return c.Status(fiber.StatusOK).JSON(schemas.Res{
 		Status: errors.Okay,
 	})
