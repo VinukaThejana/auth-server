@@ -719,10 +719,19 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 
 	if !otp.Verified {
 		otp.Verified = true
+
 		err = a.Conn.DB.Save(&otp).Error
 		if err != nil {
 			logger.Error(err)
 			errors.InternalServerErr(c)
+		}
+
+		err = a.Conn.DB.Where(&models.User{
+			ID: &userID,
+		}).Update("two_factor_enabled", true).Error
+		if err != nil {
+			logger.Error(err)
+			return errors.InternalServerErr(c)
 		}
 	}
 
