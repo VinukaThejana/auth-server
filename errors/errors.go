@@ -123,7 +123,9 @@ func TwoFactorVerificationNotEnabled(c *fiber.Ctx) error {
 }
 
 func ContinueWithTwoFactorAuthentication(c *fiber.Ctx) error {
-	return badrequest(c, ErrContinueWithTwoFactorAuthentication)
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: ErrContinueWithTwoFactorAuthentication.Error(),
+	})
 }
 
 func OTPTokenIsNotValid(c *fiber.Ctx) error {
