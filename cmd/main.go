@@ -26,6 +26,7 @@ var (
 
 	systemC controllers.System
 	authC   controllers.Auth
+	oauthC  controllers.OAuth
 	emailC  controllers.Email
 	userC   controllers.User
 	adminC  controllers.Admin
@@ -49,6 +50,10 @@ func init() {
 		Conn: &conn,
 	}
 	authC = controllers.Auth{
+		Conn: &conn,
+		Env:  &env,
+	}
+	oauthC = controllers.OAuth{
 		Conn: &conn,
 		Env:  &env,
 	}
@@ -109,6 +114,12 @@ func main() {
 		router.Route("/reauthenticate", func(router fiber.Router) {
 			router.Post("/password", authM.Check, authC.ReAuthenticateWithPassword)
 			router.Post("/passkey", authM.Check, authC.ReAuthenticateWithPassKey)
+		})
+
+		router.Route("/oauth", func(router fiber.Router) {
+			router.Route("/github", func(router fiber.Router) {
+				router.Get("/redirect", oauthC.RedirectToGitHubOAuthFlow)
+			})
 		})
 
 		router.Route("/passkeys", func(router fiber.Router) {
