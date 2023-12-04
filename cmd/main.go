@@ -124,6 +124,7 @@ func main() {
 			router.Post("/generate", authM.Check, authM.CheckReAuthToken, authC.CreateTOTP)
 			router.Post("/verify", authM.Check, authC.VerifyTOTP)
 			router.Post("/reset", authC.ResetTwoFactorAuthentication)
+			router.Post("/validate", authM.GetUA, authC.ValidateTOTPToken)
 		})
 	})
 

@@ -193,6 +193,10 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 		return errors.InCorrectCredentials(c)
 	}
 
+	if user.TwoFactorEnabled {
+		return errors.ContinueWithTwoFactorAuthentication(c, schemas.FilterUser(*user))
+	}
+
 	refreshTokenS := token.RefreshToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
@@ -717,64 +721,201 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 		return errors.OTPTokenIsNotValid(c)
 	}
 
-	if !otp.Verified {
-		otp.Verified = true
+	otp.Verified = true
 
-		err = a.Conn.DB.Save(&otp).Error
-		if err != nil {
-			logger.Error(err)
-			errors.InternalServerErr(c)
-		}
-
-		userS := services.User{
-			Conn: a.Conn,
-		}
-
-		user, err := userS.GetUserWithID(userID)
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				return errors.Unauthorized(c)
-			}
-
-			logger.Error(err)
-			return errors.InternalServerErr(c)
-		}
-		if user == nil {
-			return errors.BadRequest(c)
-		}
-
-		user.TwoFactorEnabled = true
-		err = a.Conn.DB.Save(&user).Error
-		if err != nil {
-			logger.Error(err)
-			return errors.InternalServerErr(c)
-		}
-
-		sessionTokenS := token.SessionToken{
-			Conn: a.Conn,
-			Env:  a.Env,
-		}
-
-		sessionTokenD, err := sessionTokenS.Create(*user)
-		if err != nil {
-			logger.ErrorWithMsg(err, "Failed to create the session token")
-			return errors.InternalServerErr(c)
-		}
-
-		c.Cookie(&fiber.Cookie{
-			Name:     "session",
-			Value:    *sessionTokenD.Token,
-			Path:     "/",
-			MaxAge:   a.Env.RefreshTokenMaxAge * 60,
-			Secure:   false,
-			HTTPOnly: false,
-			Domain:   "localhost",
-		})
+	err = a.Conn.DB.Save(&otp).Error
+	if err != nil {
+		logger.Error(err)
+		errors.InternalServerErr(c)
 	}
+
+	userS := services.User{
+		Conn: a.Conn,
+	}
+
+	userM, err := userS.GetUserWithID(userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.Unauthorized(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	if userM == nil {
+		return errors.BadRequest(c)
+	}
+
+	userM.TwoFactorEnabled = true
+	err = a.Conn.DB.Save(&userM).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	sessionTokenS := token.SessionToken{
+		Conn: a.Conn,
+		Env:  a.Env,
+	}
+
+	sessionTokenD, err := sessionTokenS.Create(*userM)
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the session token")
+		return errors.InternalServerErr(c)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    *sessionTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":         errors.Okay,
 		"memonic_phrase": otp.MemonicPhrase,
+	})
+}
+
+// ValidateTOTPToken is a function that is used to login 2 factor enabled users
+func (a *Auth) ValidateTOTPToken(c *fiber.Ctx) error {
+	var payload struct {
+		ID   string `json:"id" validate:"required,uuid"`
+		Code string `json:"code" validate:"required"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	userID, err := uuid.Parse(payload.ID)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	userS := services.User{
+		Conn: a.Conn,
+	}
+
+	user, err := userS.GetUserWithID(userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.BadRequest(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	if user == nil {
+		return errors.BadRequest(c)
+	}
+
+	if !user.TwoFactorEnabled {
+		return errors.TwoFactorVerificationNotEnabled(c)
+	}
+
+	var otp models.OTP
+	err = a.Conn.DB.Where(&models.OTP{
+		UserID: &userID,
+	}).First(&otp).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.TwoFactorVerificationNotEnabled(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	valid := totp.Validate(payload.Code, otp.Secret)
+	if !valid {
+		return errors.OTPTokenIsNotValid(c)
+	}
+
+	refreshTokenS := token.RefreshToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: *user.ID,
+	}
+	accessTokenS := token.AccessToken{
+		Conn:   a.Conn,
+		Env:    a.Env,
+		UserID: *user.ID,
+	}
+	sessionTokenS := token.SessionToken{
+		Conn: a.Conn,
+		Env:  a.Env,
+	}
+
+	ua := session.GetUA(c)
+
+	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{
+		IPAddress:    c.IP(),
+		DeviceVendor: ua.Device.Vendor,
+		DeviceModel:  ua.Device.Model,
+		OSName:       ua.OS.Name,
+		OSVersion:    ua.OS.Version,
+	})
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the refresh token")
+		return errors.InternalServerErr(c)
+	}
+	accessTokenD, err := accessTokenS.Create(refreshTokenD.TokenUUID)
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the access token")
+		return errors.InternalServerErr(c)
+	}
+	sessionTokenD, err := sessionTokenS.Create(*user)
+	if err != nil {
+		logger.ErrorWithMsg(err, "Failed to create the session token")
+		return errors.InternalServerErr(c)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    *accessTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    *refreshTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
+		Domain:   "localhost",
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "session",
+		Value:    *sessionTokenD.Token,
+		Path:     "/",
+		MaxAge:   a.Env.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": errors.Okay,
+		"user":   schemas.FilterUser(*user),
 	})
 }
 
