@@ -34,6 +34,11 @@ type Env struct {
 	FrontendHostname         string        `mapstructure:"FRONTEND_HOSTNAME" validate:"required,hostname"`
 	FrontendURL              string        `mapstructure:"FRONTEND_URL" validate:"required,url"`
 	AdminSecret              string        `mapstructure:"ADMIN_SECRET" validate:"required"`
+	GitHubClientID           string        `mapstructure:"GITHUB_CLIENT_ID" validate:"required"`
+	GitHubClientSecret       string        `mapstructure:"GITHUB_CLIENT_SECRET" validate:"required"`
+	GitHubFromURL            string        `mapstructure:"GITHUB_FROM_URL" validate:"required,url"`
+	GitHubRedirectURL        string        `mapstructure:"GITHUB_REDIRECT_URL" validate:"required,url"`
+	GitHubRootURL            string        `mapstructure:"GITHUB_ROOT_URL" validate:"required,url"`
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
