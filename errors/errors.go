@@ -122,9 +122,10 @@ func TwoFactorVerificationNotEnabled(c *fiber.Ctx) error {
 	return badrequest(c, ErrTwoFactorverificationNotEnabled)
 }
 
-func ContinueWithTwoFactorAuthentication(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: ErrContinueWithTwoFactorAuthentication.Error(),
+func ContinueWithTwoFactorAuthentication(c *fiber.Ctx, user schemas.User) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": ErrContinueWithTwoFactorAuthentication.Error(),
+		"user":   user,
 	})
 }
 
