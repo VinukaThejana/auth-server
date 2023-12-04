@@ -14,31 +14,32 @@ import (
 //revive:disable
 
 var (
-	ErrInternalServerError             = fmt.Errorf("internal_server_error")
-	ErrUnauthorized                    = fmt.Errorf("unauthorized")
-	ErrAccessTokenNotProvided          = fmt.Errorf("access_token_not_provided")
-	ErrBadRequest                      = fmt.Errorf("bad_request")
-	ErrIncorrectCredentials            = fmt.Errorf("incorrect_credentials")
-	ErrRefreshTokenExpired             = fmt.Errorf("refresh_token_expired")
-	ErrRefreshTokenNotProvided         = fmt.Errorf("refresh_token_not_provided")
-	ErrAccessTokenExpired              = fmt.Errorf("access_token_expired")
-	ErrUsernameAlreadyUsed             = fmt.Errorf("username_already_used")
-	ErrEmailAlreadyUsed                = fmt.Errorf("email_already_used")
-	ErrEmailConfirmationExpired        = fmt.Errorf("email_confirmation_expired")
-	ErrHaveAnAccountWithTheEmail       = fmt.Errorf("already_have_an_account")
-	ErrNoAccountWithEmail              = fmt.Errorf("no_account_with_email")
-	ErrNoAccountWithUsername           = fmt.Errorf("no_account_with_username")
-	ErrAddAUsername                    = fmt.Errorf("add_a_username")
-	ErrTwoFactorverificationNotEnabled = fmt.Errorf("two_factor_verification_not_enabled")
-	ErrOTPTokenIsNotValid              = fmt.Errorf("otp_token_is_not_valid")
-	ErrMemonicPhraseIsNotValid         = fmt.Errorf("memonic_phrase_not_valid")
-	ErrReAuthTokenNotPresent           = fmt.Errorf("reauth_token_not_present")
-	ErrVerifyYourEmailAddressFirst     = fmt.Errorf("verify_your_email_address_first")
-	ErrTokenExpired                    = fmt.Errorf("token_expired")
-	ErrPassKeyCannotBeVerified         = fmt.Errorf("passkey_cannot_be_verified")
-	ErrPassKeyAlreadyCreated           = fmt.Errorf("passkey_already_created")
-	ErrPasskeyWithTheGivenIDIsNotFound = fmt.Errorf("passkey_with_the_given_id_is_not_found")
-	Okay                               = "okay"
+	ErrInternalServerError                 = fmt.Errorf("internal_server_error")
+	ErrUnauthorized                        = fmt.Errorf("unauthorized")
+	ErrAccessTokenNotProvided              = fmt.Errorf("access_token_not_provided")
+	ErrBadRequest                          = fmt.Errorf("bad_request")
+	ErrIncorrectCredentials                = fmt.Errorf("incorrect_credentials")
+	ErrRefreshTokenExpired                 = fmt.Errorf("refresh_token_expired")
+	ErrRefreshTokenNotProvided             = fmt.Errorf("refresh_token_not_provided")
+	ErrAccessTokenExpired                  = fmt.Errorf("access_token_expired")
+	ErrUsernameAlreadyUsed                 = fmt.Errorf("username_already_used")
+	ErrEmailAlreadyUsed                    = fmt.Errorf("email_already_used")
+	ErrEmailConfirmationExpired            = fmt.Errorf("email_confirmation_expired")
+	ErrHaveAnAccountWithTheEmail           = fmt.Errorf("already_have_an_account")
+	ErrNoAccountWithEmail                  = fmt.Errorf("no_account_with_email")
+	ErrNoAccountWithUsername               = fmt.Errorf("no_account_with_username")
+	ErrAddAUsername                        = fmt.Errorf("add_a_username")
+	ErrTwoFactorverificationNotEnabled     = fmt.Errorf("two_factor_verification_not_enabled")
+	ErrContinueWithTwoFactorAuthentication = fmt.Errorf("continue_with_two_factor_authentication")
+	ErrOTPTokenIsNotValid                  = fmt.Errorf("otp_token_is_not_valid")
+	ErrMemonicPhraseIsNotValid             = fmt.Errorf("memonic_phrase_not_valid")
+	ErrReAuthTokenNotPresent               = fmt.Errorf("reauth_token_not_present")
+	ErrVerifyYourEmailAddressFirst         = fmt.Errorf("verify_your_email_address_first")
+	ErrTokenExpired                        = fmt.Errorf("token_expired")
+	ErrPassKeyCannotBeVerified             = fmt.Errorf("passkey_cannot_be_verified")
+	ErrPassKeyAlreadyCreated               = fmt.Errorf("passkey_already_created")
+	ErrPasskeyWithTheGivenIDIsNotFound     = fmt.Errorf("passkey_with_the_given_id_is_not_found")
+	Okay                                   = "okay"
 )
 
 type res schemas.Res
@@ -119,6 +120,10 @@ func NoAccountWithUsername(c *fiber.Ctx) error {
 
 func TwoFactorVerificationNotEnabled(c *fiber.Ctx) error {
 	return badrequest(c, ErrTwoFactorverificationNotEnabled)
+}
+
+func ContinueWithTwoFactorAuthentication(c *fiber.Ctx) error {
+	return badrequest(c, ErrContinueWithTwoFactorAuthentication)
 }
 
 func OTPTokenIsNotValid(c *fiber.Ctx) error {
