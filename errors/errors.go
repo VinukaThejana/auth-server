@@ -40,6 +40,7 @@ var (
 	ErrPassKeyAlreadyCreated                   = fmt.Errorf("passkey_already_created")
 	ErrPasskeyWithTheGivenIDIsNotFound         = fmt.Errorf("passkey_with_the_given_id_is_not_found")
 	ErrCouldNotParseAccessKeyFromOAuthProvider = fmt.Errorf("could_not_parse_access_token_from_oauth_provider")
+	ErrCouldNotGetUserFromOAuthProvider        = fmt.Errorf("could_not_parse_user_from_oauth_provider")
 	Okay                                       = "okay"
 )
 
