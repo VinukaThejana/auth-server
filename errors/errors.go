@@ -166,14 +166,14 @@ func PassKeyOfGivenIDNotFound(c *fiber.Ctx) error {
 }
 
 func UseANewUsername(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status": ErrEnterANewUsername,
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: ErrAddAUsername.Error(),
 	})
 }
 
 func LinkAccount(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status": ErrLinkAccountWithEmail,
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: ErrLinkAccountWithEmail.Error(),
 	})
 }
 
