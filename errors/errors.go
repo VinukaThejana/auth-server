@@ -41,6 +41,8 @@ var (
 	ErrPasskeyWithTheGivenIDIsNotFound         = fmt.Errorf("passkey_with_the_given_id_is_not_found")
 	ErrCouldNotParseAccessKeyFromOAuthProvider = fmt.Errorf("could_not_parse_access_token_from_oauth_provider")
 	ErrCouldNotGetUserFromOAuthProvider        = fmt.Errorf("could_not_parse_user_from_oauth_provider")
+	ErrEnterANewUsername                       = fmt.Errorf("enter_a_new_username")
+	ErrLinkAccountWithEmail                    = fmt.Errorf("link_account_with_exsisting_email")
 	Okay                                       = "okay"
 )
 
@@ -161,6 +163,18 @@ func PassKeyAlreadyCreated(c *fiber.Ctx) error {
 
 func PassKeyOfGivenIDNotFound(c *fiber.Ctx) error {
 	return badrequest(c, ErrPasskeyWithTheGivenIDIsNotFound)
+}
+
+func UseANewUsername(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": ErrEnterANewUsername,
+	})
+}
+
+func LinkAccount(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": ErrLinkAccountWithEmail,
+	})
 }
 
 //revive:enable
