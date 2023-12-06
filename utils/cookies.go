@@ -80,3 +80,16 @@ func GenerateCookies(c *fiber.Ctx, user *models.User, conn *connect.Connector, e
 
 	return nil
 }
+
+// SetOAuthAccessToken is a function that is used to send the oauth access token provided by the oauth party to the client
+func SetOAuthAccessToken(c *fiber.Ctx, tokenDetails *token.Details) {
+	c.Cookie(&fiber.Cookie{
+		Name:     "oauth_token",
+		Value:    *tokenDetails.Token,
+		Path:     "/",
+		MaxAge:   60 * 60,
+		Secure:   false,
+		HTTPOnly: false,
+		Domain:   "localhost",
+	})
+}
