@@ -177,6 +177,12 @@ func LinkAccount(c *fiber.Ctx) error {
 	})
 }
 
+func Done(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusOK).JSON(schemas.Res{
+		Status: Okay,
+	})
+}
+
 //revive:enable
 
 // CheckDBError is a struc that is used to identify the database errors
