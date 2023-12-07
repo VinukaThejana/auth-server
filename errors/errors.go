@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/schemas"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -175,6 +176,13 @@ func LinkAccount(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(schemas.Res{
 		Status: ErrLinkAccountWithEmail.Error(),
 	})
+}
+
+func RedirectToTheFrontendWithErrState(c *fiber.Ctx, env *config.Env, state error) error {
+	if state == nil {
+		return c.Redirect(env.FrontendURL)
+	}
+	return c.Redirect(fmt.Sprintf("%s?state=%s", env.FrontendURL, state))
 }
 
 func Done(c *fiber.Ctx) error {
