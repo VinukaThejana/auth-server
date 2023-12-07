@@ -6,7 +6,13 @@ import (
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
+	"github.com/VinukaThejana/auth/errors"
+	"github.com/VinukaThejana/auth/models"
+	"github.com/VinukaThejana/auth/services"
+	"github.com/VinukaThejana/auth/utils"
+	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 // OAuth is a struct that contains OAuth related controllers
@@ -25,5 +31,146 @@ func (o *OAuth) RedirectToGitHubOAuthFlow(c *fiber.Ctx) error {
 	}
 
 	githubRedirectURL := fmt.Sprintf("%s?%s", o.Env.GitHubRootURL, options.Encode())
+	fmt.Printf("githubRedirectURL: %v\n", githubRedirectURL)
 	return c.Redirect(githubRedirectURL)
+}
+
+// GitHubCallback is the callback handler that GitHub responds to
+func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+
+	if code == "" {
+		return errors.Unauthorized(c)
+	}
+
+	oauthS := services.OAuth{
+		Conn: o.Conn,
+		Env:  o.Env,
+	}
+	userS := services.User{
+		Conn: o.Conn,
+	}
+
+	accessToken, err := oauthS.GetGitHubAccessToken(code)
+	if err != nil {
+		logger.Error(err)
+		if err == errors.ErrCouldNotParseAccessKeyFromOAuthProvider {
+			err = errors.ErrCouldNotParseAccessKeyFromOAuthProvider
+		} else {
+			logger.Error(err)
+			err = errors.ErrInternalServerError
+		}
+
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+	}
+	if accessToken == nil {
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+	}
+
+	userDetails, err := oauthS.GetGitHubUser(*accessToken)
+	if err != nil || userDetails == nil {
+		if err != nil {
+			err = errors.ErrInternalServerError
+		} else {
+			err = errors.ErrUnauthorized
+		}
+
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+	}
+
+	fmt.Printf("userDetails: %v\n", userDetails)
+	const provider = "github"
+
+	var provderDetails models.OAuth
+	err = o.Conn.DB.Where(models.OAuth{
+		Provider:   provider,
+		ProviderID: fmt.Sprint(userDetails.ID),
+	}).First(&provderDetails).Error
+	if err == nil {
+		user, err := userS.GetUserWithID(*provderDetails.UserID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				err = errors.ErrUnauthorized
+			} else {
+				logger.Error(err)
+				err = errors.ErrInternalServerError
+			}
+
+			return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+		}
+
+		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
+		if err != nil {
+			logger.Error(err)
+			return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+		}
+
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, nil)
+	}
+	if err != gorm.ErrRecordNotFound {
+		logger.Error(err)
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+	}
+
+	if userDetails.Email == nil {
+		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, provider)
+		if err != nil {
+			switch err {
+			case errors.ErrAddAUsername:
+				err = utils.SetOAuthAccessToken(c, o.Conn, o.Env, *accessToken)
+				if err != nil {
+					logger.Error(err)
+					err = errors.ErrInternalServerError
+				} else {
+					err = errors.ErrAddAUsername
+				}
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+			default:
+				logger.Error(err)
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+			}
+		}
+
+		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
+		if err != nil {
+			logger.Error(err)
+			return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+		}
+
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, nil)
+	}
+
+	_, err = userS.GetUserWithEmail(*userDetails.Email)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		logger.Error(err)
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+	}
+	if err == gorm.ErrRecordNotFound {
+		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, provider)
+		if err != nil {
+			switch err {
+			case errors.ErrAddAUsername:
+				err = utils.SetOAuthAccessToken(c, o.Conn, o.Env, *accessToken)
+				if err != nil {
+					err = errors.ErrInternalServerError
+					logger.Error(err)
+				} else {
+					err = errors.ErrAddAUsername
+				}
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+			default:
+				logger.Error(err)
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+			}
+		}
+
+		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
+		if err != nil {
+			logger.Error(err)
+			return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+		}
+		return errors.RedirectToTheFrontendWithErrState(c, o.Env, nil)
+	}
+
+	return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrLinkAccountWithEmail)
 }
