@@ -116,12 +116,6 @@ func main() {
 			router.Post("/passkey", authM.Check, authC.ReAuthenticateWithPassKey)
 		})
 
-		router.Route("/oauth", func(router fiber.Router) {
-			router.Route("/github", func(router fiber.Router) {
-				router.Get("/redirect", oauthC.RedirectToGitHubOAuthFlow)
-			})
-		})
-
 		router.Route("/passkeys", func(router fiber.Router) {
 			router.Get("/challenge", authC.GetChallenge)
 			router.Post("/create", authM.Check, authC.CreatePassKey)
@@ -136,6 +130,13 @@ func main() {
 			router.Post("/verify", authM.Check, authC.VerifyTOTP)
 			router.Post("/reset", authC.ResetTwoFactorAuthentication)
 			router.Post("/validate", authM.GetUA, authC.ValidateTOTPToken)
+		})
+	})
+
+	app.Route("/oauth", func(router fiber.Router) {
+		router.Route("/github", func(router fiber.Router) {
+			router.Get("/redirect", oauthC.RedirectToGitHubOAuthFlow)
+			router.Get("/callback", authM.GetUA, oauthC.GitHubCallback)
 		})
 	})
 
