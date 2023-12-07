@@ -10,13 +10,16 @@ import (
 	"time"
 
 	"github.com/VinukaThejana/auth/config"
+	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
+	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
 )
 
 // OAuth struct contains services related oauth handlers
 type OAuth struct {
-	Env *config.Env
+	Conn *connect.Connector
+	Env  *config.Env
 }
 
 // GetGitHubAccessToken is a function that is used to get the GitHub access token
@@ -107,4 +110,48 @@ func (o *OAuth) GetGitHubUser(accessToken string) (schema *schemas.GitHub, err e
 	github.GetEmailFromPayload(payload)
 
 	return &github, nil
+}
+
+// CreateGitHubUserByCheckingUsername is a function that is used to create a user by using the github oauth details by checking the availability
+// of the given username by GitHub oauth provider or the custom provided username by the user
+func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *schemas.GitHub, provider string) (user *models.User, err error) {
+	ok, isVerified, err := userS.IsUsernameAvailable(userDetails.Username)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		if isVerified {
+			return nil, errors.ErrAddAUsername
+		} else {
+			err = userS.DeleteUserWUsername(userDetails.Username)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	var userM models.User
+	userM.Username = userDetails.Username
+	userM.Name = userDetails.Name
+	userM.PhotoURL = userDetails.AvatarURL
+	userM.Verified = true
+	if userDetails.Email != nil {
+		userM.Email = *userDetails.Email
+	}
+
+	userM, err = userS.Create(userM)
+	if err != nil {
+		return nil, err
+	}
+
+	err = o.Conn.DB.Create(&models.OAuth{
+		Provider:   provider,
+		ProviderID: fmt.Sprint(userDetails.ID),
+		UserID:     userM.ID,
+	}).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &userM, nil
 }
