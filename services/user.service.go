@@ -116,6 +116,11 @@ func (u *User) DeleteUser(user models.User) error {
 	return u.Conn.DB.Delete(user).Error
 }
 
+// DeleteUserWUsername is a function that is used to delete a user with a given username
+func (u *User) DeleteUserWUsername(username string) error {
+	return u.Conn.DB.Where("username = ?", username).Delete(&models.User{}).Error
+}
+
 // SetupTOTP2FactorVerification is a function that is used to setup TOTP 2 factor authentication for a given user
 func (u *User) SetupTOTP2FactorVerification(totp models.OTP) error {
 	return u.Conn.DB.Clauses(clause.OnConflict{
