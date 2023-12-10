@@ -6,4 +6,7 @@ const (
 	SysHealth = "health"
 	// SysHealthMsg -> denotes the custom health status message of the system
 	SysHealthMsg = "system_message"
+
+	// GitHub -> used to denote the GitHub oauth provider
+	GitHub = "github"
 )
