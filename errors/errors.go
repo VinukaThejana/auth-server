@@ -178,11 +178,11 @@ func LinkAccount(c *fiber.Ctx) error {
 	})
 }
 
-func RedirectToTheFrontendWithErrState(c *fiber.Ctx, env *config.Env, state error) error {
+func OAuthStateRedirect(c *fiber.Ctx, env *config.Env, provider string, state error) error {
 	if state == nil {
 		return c.Redirect(env.FrontendURL)
 	}
-	return c.Redirect(fmt.Sprintf("%s?state=%s", env.FrontendURL, state))
+	return c.Redirect(fmt.Sprintf("%s?state=%s&provider=%s", env.FrontendURL, state, provider))
 }
 
 func Done(c *fiber.Ctx) error {
