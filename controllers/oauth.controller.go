@@ -124,7 +124,7 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 			case errors.ErrUsernameAlreadyUsed:
 				err = errors.ErrUsernameAlreadyUsed
 			case errors.ErrAddAUsername:
-				err = errors.ErrUsernameAlreadyUsed
+				err = errors.ErrAddAUsername
 			default:
 				logger.Error(err)
 				err = errors.ErrInternalServerError
@@ -156,7 +156,7 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 			case errors.ErrUsernameAlreadyUsed:
 				err = errors.ErrUsernameAlreadyUsed
 			case errors.ErrAddAUsername:
-				err = errors.ErrUsernameAlreadyUsed
+				err = errors.ErrAddAUsername
 			default:
 				logger.Error(err)
 				err = errors.ErrInternalServerError
