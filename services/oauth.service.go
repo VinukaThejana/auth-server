@@ -127,8 +127,10 @@ func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *sch
 				return nil, errors.ErrAddAUsername
 			}
 
-			var payload struct {
+			payload := struct {
 				username string `validate:"required,min=3,max=20,validate_username"`
+			}{
+				username: username,
 			}
 			v := validator.New()
 			v.RegisterValidation("validate_username", validate.Username)
