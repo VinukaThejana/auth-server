@@ -33,8 +33,8 @@ func (u *User) CheckUsername(c *fiber.Ctx) error {
 	}
 
 	type res struct {
-		IsAvailable bool   `json:"is_available"`
 		Status      string `json:"status"`
+		IsAvailable bool   `json:"is_available"`
 	}
 
 	if err := c.BodyParser(&payload); err != nil {
