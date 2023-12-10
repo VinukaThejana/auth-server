@@ -120,22 +120,17 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		if err != nil {
 			switch err {
 			case errors.ErrBadRequest:
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrBadRequest)
+				err = errors.ErrBadRequest
 			case errors.ErrUsernameAlreadyUsed:
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrUsernameAlreadyUsed)
+				err = errors.ErrUsernameAlreadyUsed
 			case errors.ErrAddAUsername:
-				err = utils.SetOAuthAccessToken(c, o.Conn, o.Env, *accessToken)
-				if err != nil {
-					logger.Error(err)
-					err = errors.ErrInternalServerError
-				} else {
-					err = errors.ErrAddAUsername
-				}
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+				err = errors.ErrUsernameAlreadyUsed
 			default:
 				logger.Error(err)
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+				err = errors.ErrInternalServerError
 			}
+
+			return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
 		}
 
 		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
@@ -157,22 +152,17 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		if err != nil {
 			switch err {
 			case errors.ErrBadRequest:
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrBadRequest)
+				err = errors.ErrBadRequest
 			case errors.ErrUsernameAlreadyUsed:
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrUsernameAlreadyUsed)
+				err = errors.ErrUsernameAlreadyUsed
 			case errors.ErrAddAUsername:
-				err = utils.SetOAuthAccessToken(c, o.Conn, o.Env, *accessToken)
-				if err != nil {
-					err = errors.ErrInternalServerError
-					logger.Error(err)
-				} else {
-					err = errors.ErrAddAUsername
-				}
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+				err = errors.ErrUsernameAlreadyUsed
 			default:
 				logger.Error(err)
-				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+				err = errors.ErrInternalServerError
 			}
+
+			return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
 		}
 
 		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
