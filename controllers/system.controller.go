@@ -18,7 +18,7 @@ type System struct {
 func (s *System) Health(c *fiber.Ctx) error {
 	var health bool
 	var err error
-	status := s.Conn.R.System.Get(context.TODO(), enums.SYS_HEALTH).Val()
+	status := s.Conn.R.System.Get(context.TODO(), enums.SysHealth).Val()
 	if status == "" {
 		health = false
 	} else {
@@ -28,7 +28,7 @@ func (s *System) Health(c *fiber.Ctx) error {
 		}
 	}
 
-	msg := s.Conn.R.System.Get(context.TODO(), enums.SYS_HEALTH_MSG).Val()
+	msg := s.Conn.R.System.Get(context.TODO(), enums.SysHealthMsg).Val()
 	if msg == "" {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"heatlh": health,
