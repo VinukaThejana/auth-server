@@ -40,7 +40,7 @@ func (o *OAuth) RedirectToGitHubOAuthFlow(c *fiber.Ctx) error {
 // GitHubCallback is the callback handler that GitHub responds to
 func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
-	username := c.Query("username")
+	username := c.Query("state")
 
 	if code == "" {
 		return errors.Unauthorized(c)
