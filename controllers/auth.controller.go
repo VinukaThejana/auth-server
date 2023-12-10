@@ -625,9 +625,9 @@ func (a *Auth) ReAuthenticateWithPassKey(c *fiber.Ctx) error {
 	defer resp.Body.Close()
 
 	var body struct {
-		IsValid    bool         `json:"isValid"`
 		NewCounter *int         `json:"newCounter"`
 		Err        *interface{} `json:"err"`
+		IsValid    bool         `json:"isValid"`
 	}
 
 	bodyC, err := io.ReadAll(resp.Body)
@@ -1118,10 +1118,10 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	defer resp.Body.Close()
 
 	var body struct {
-		IsValid             bool         `json:"isValid"`
 		CredentialID        *string      `json:"credentialID"`
 		CredentialPublicKey *string      `json:"credentialPublicKey"`
 		Err                 *interface{} `json:"err"`
+		IsValid             bool         `json:"isValid"`
 	}
 
 	bodyC, err := io.ReadAll(resp.Body)
@@ -1272,9 +1272,9 @@ func (a *Auth) LoginWithPassKey(c *fiber.Ctx) error {
 	defer resp.Body.Close()
 
 	var body struct {
-		IsValid    bool         `json:"isValid"`
 		NewCounter *int         `json:"newCounter"`
 		Err        *interface{} `json:"err"`
+		IsValid    bool         `json:"isValid"`
 	}
 
 	bodyC, err := io.ReadAll(resp.Body)

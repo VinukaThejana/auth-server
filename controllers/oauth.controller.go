@@ -6,6 +6,7 @@ import (
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
+	"github.com/VinukaThejana/auth/enums"
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/services"
@@ -64,10 +65,10 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 			err = errors.ErrInternalServerError
 		}
 
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 	}
 	if accessToken == nil {
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 	}
 
 	userDetails, err := oauthS.GetGitHubUser(*accessToken)
@@ -78,7 +79,7 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 			err = errors.ErrUnauthorized
 		}
 
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 	}
 
 	fmt.Printf("userDetails: %v\n", userDetails)
@@ -99,20 +100,20 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 				err = errors.ErrInternalServerError
 			}
 
-			return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 		}
 
 		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
 		if err != nil {
 			logger.Error(err)
-			return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 		}
 
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, nil)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
 	}
 	if err != gorm.ErrRecordNotFound {
 		logger.Error(err)
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 	}
 
 	if userDetails.Email == nil {
@@ -130,22 +131,22 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 				err = errors.ErrInternalServerError
 			}
 
-			return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 		}
 
 		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
 		if err != nil {
 			logger.Error(err)
-			return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 		}
 
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, nil)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
 	}
 
 	_, err = userS.GetUserWithEmail(*userDetails.Email)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		logger.Error(err)
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 	}
 	if err == gorm.ErrRecordNotFound {
 		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, username, provider)
@@ -162,16 +163,16 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 				err = errors.ErrInternalServerError
 			}
 
-			return errors.RedirectToTheFrontendWithErrState(c, o.Env, err)
+			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 		}
 
 		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
 		if err != nil {
 			logger.Error(err)
-			return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
+			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 		}
-		return errors.RedirectToTheFrontendWithErrState(c, o.Env, nil)
+		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
 	}
 
-	return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrLinkAccountWithEmail)
+	return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrLinkAccountWithEmail)
 }
