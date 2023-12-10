@@ -1,8 +1,6 @@
 package services
 
 import (
-	"strings"
-
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/google/uuid"
@@ -44,14 +42,9 @@ func (u *User) IsUsernameAvailable(username string) (
 	err error,
 ) {
 	var user models.User
-	err = u.Conn.DB.Select("username", "verified").Where(&models.User{
-		Username: username,
-	}).First(&user).Error
+	err = u.Conn.DB.Raw("SELECT username, verified FROM users WHERE LOWER(username) = LOWER(?)", username).Scan(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			if strings.ToLower(user.Username) == strings.ToLower(username) {
-				return false, false, nil
-			}
 			return true, false, nil
 		}
 
