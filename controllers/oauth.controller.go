@@ -23,11 +23,13 @@ type OAuth struct {
 
 // RedirectToGitHubOAuthFlow is a function that is used to redirect the user to the GitHub oauth flow
 func (o *OAuth) RedirectToGitHubOAuthFlow(c *fiber.Ctx) error {
+	username := c.Query("username")
+
 	options := url.Values{
 		"client_id":    []string{o.Env.GitHubClientID},
 		"redirect_uri": []string{o.Env.GitHubRedirectURL},
 		"scope":        []string{"user:email"},
-		"state":        []string{o.Env.GitHubFromURL},
+		"state":        []string{username},
 	}
 
 	githubRedirectURL := fmt.Sprintf("%s?%s", o.Env.GitHubRootURL, options.Encode())
@@ -38,6 +40,7 @@ func (o *OAuth) RedirectToGitHubOAuthFlow(c *fiber.Ctx) error {
 // GitHubCallback is the callback handler that GitHub responds to
 func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
+	username := c.Query("username")
 
 	if code == "" {
 		return errors.Unauthorized(c)
@@ -113,9 +116,13 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 	}
 
 	if userDetails.Email == nil {
-		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, provider)
+		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, username, provider)
 		if err != nil {
 			switch err {
+			case errors.ErrBadRequest:
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrBadRequest)
+			case errors.ErrUsernameAlreadyUsed:
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrUsernameAlreadyUsed)
 			case errors.ErrAddAUsername:
 				err = utils.SetOAuthAccessToken(c, o.Conn, o.Env, *accessToken)
 				if err != nil {
@@ -146,9 +153,13 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrInternalServerError)
 	}
 	if err == gorm.ErrRecordNotFound {
-		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, provider)
+		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, username, provider)
 		if err != nil {
 			switch err {
+			case errors.ErrBadRequest:
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrBadRequest)
+			case errors.ErrUsernameAlreadyUsed:
+				return errors.RedirectToTheFrontendWithErrState(c, o.Env, errors.ErrUsernameAlreadyUsed)
 			case errors.ErrAddAUsername:
 				err = utils.SetOAuthAccessToken(c, o.Conn, o.Env, *accessToken)
 				if err != nil {

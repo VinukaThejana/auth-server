@@ -14,6 +14,8 @@ import (
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
+	"github.com/VinukaThejana/auth/validate"
+	"github.com/go-playground/validator/v10"
 )
 
 // OAuth struct contains services related oauth handlers
@@ -114,19 +116,40 @@ func (o *OAuth) GetGitHubUser(accessToken string) (schema *schemas.GitHub, err e
 
 // CreateGitHubUserByCheckingUsername is a function that is used to create a user by using the github oauth details by checking the availability
 // of the given username by GitHub oauth provider or the custom provided username by the user
-func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *schemas.GitHub, provider string) (user *models.User, err error) {
+func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *schemas.GitHub, username, provider string) (user *models.User, err error) {
 	ok, isVerified, err := userS.IsUsernameAvailable(userDetails.Username)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		if isVerified {
-			return nil, errors.ErrAddAUsername
-		} else {
-			err = userS.DeleteUserWUsername(userDetails.Username)
+			if username == "" {
+				return nil, errors.ErrAddAUsername
+			}
+
+			var payload struct {
+				username string `validate:"required,min=3,max=20,validate_username"`
+			}
+			v := validator.New()
+			v.RegisterValidation("validate_username", validate.Username)
+			err := v.Struct(payload)
+			if err != nil {
+				return nil, errors.ErrBadRequest
+			}
+
+			ok, isVerified, err = userS.IsUsernameAvailable(payload.username)
 			if err != nil {
 				return nil, err
 			}
+			if !ok && isVerified {
+				return nil, errors.ErrUsernameAlreadyUsed
+			}
+
+			userDetails.Username = payload.username
+		}
+		err = userS.DeleteUserWUsername(userDetails.Username)
+		if err != nil {
+			return nil, err
 		}
 	}
 
