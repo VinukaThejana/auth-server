@@ -160,6 +160,10 @@ func (a *Auth) LoginWEmailAndPassword(c *fiber.Ctx) error {
 	v.RegisterValidation("validate_login", validate.LoginWithEmailOrUsernameAndPassword)
 	err := v.Struct(payload)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "Key: 'Password'") {
+			return errors.InCorrectCredentials(c)
+		}
+
 		logger.Error(err)
 		return errors.BadRequest(c)
 	}
