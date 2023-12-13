@@ -11,6 +11,7 @@ import (
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
+	"github.com/VinukaThejana/auth/enums"
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
@@ -117,21 +118,21 @@ func (o *OAuth) GetGitHubUser(accessToken string) (schema *schemas.GitHub, err e
 
 // CreateGitHubUserByCheckingUsername is a function that is used to create a user by using the github oauth details by checking the availability
 // of the given username by GitHub oauth provider or the custom provided username by the user
-func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *schemas.GitHub, username, provider string) (user *models.User, err error) {
+func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *schemas.GitHub, username *string) (user *models.User, err error) {
 	ok, isVerified, err := userS.IsUsernameAvailable(userDetails.Username)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		if isVerified {
-			if username == "" {
+			if username == nil {
 				return nil, errors.ErrAddAUsername
 			}
 
 			payload := struct {
 				username string `validate:"required,min=3,max=20,validate_username"`
 			}{
-				username: username,
+				username: *username,
 			}
 			v := validator.New()
 			v.RegisterValidation("validate_username", validate.Username)
@@ -171,7 +172,7 @@ func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *sch
 	}
 
 	err = o.Conn.DB.Create(&models.OAuth{
-		Provider:   provider,
+		Provider:   enums.GitHub,
 		ProviderID: fmt.Sprint(userDetails.ID),
 		UserID:     userM.ID,
 	}).Error
