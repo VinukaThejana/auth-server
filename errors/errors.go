@@ -178,13 +178,6 @@ func LinkAccount(c *fiber.Ctx) error {
 	})
 }
 
-func OAuthStateRedirect(c *fiber.Ctx, env *config.Env, provider string, state error) error {
-	if state == nil {
-		return c.Redirect(env.FrontendURL)
-	}
-	return c.Redirect(fmt.Sprintf("%s?state=%s&provider=%s", env.FrontendURL, state, provider))
-}
-
 func Done(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(schemas.Res{
 		Status: Okay,
@@ -192,6 +185,22 @@ func Done(c *fiber.Ctx) error {
 }
 
 //revive:enable
+
+// Redirect is a struct that is used to manage redirections
+type Redirect struct {
+	C        *fiber.Ctx
+	Env      *config.Env
+	Provider string
+}
+
+// WithState is a fucntion that is used to redirect with error state
+func (r *Redirect) WithState(state error) error {
+	if state == nil {
+		return r.C.Redirect(r.Env.FrontendURL)
+	}
+
+	return r.C.Redirect(fmt.Sprintf("%s?state=%s&provider=%s", r.Env.FrontendURL, state, r.Provider))
+}
 
 // CheckDBError is a struc that is used to identify the database errors
 type CheckDBError struct{}
