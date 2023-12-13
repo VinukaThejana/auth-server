@@ -71,8 +71,8 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 	}
 
-	userDetails, err := oauthS.GetGitHubUser(*accessToken)
-	if err != nil || userDetails == nil {
+	githubUserDetails, err := oauthS.GetGitHubUser(*accessToken)
+	if err != nil || githubUserDetails == nil {
 		if err != nil {
 			err = errors.ErrInternalServerError
 		} else {
@@ -82,13 +82,12 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 	}
 
-	fmt.Printf("userDetails: %v\n", userDetails)
-	const provider = "github"
+	fmt.Printf("userDetails: %v\n", githubUserDetails)
 
 	var provderDetails models.OAuth
 	err = o.Conn.DB.Where(models.OAuth{
-		Provider:   provider,
-		ProviderID: fmt.Sprint(userDetails.ID),
+		Provider:   enums.GitHub,
+		ProviderID: fmt.Sprint(githubUserDetails.ID),
 	}).First(&provderDetails).Error
 	if err == nil {
 		user, err := userS.GetUserWithID(*provderDetails.UserID)
@@ -115,9 +114,10 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		logger.Error(err)
 		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 	}
+	githubUserDetails.GetEmailFromPayload()
 
-	if userDetails.Email == nil {
-		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, username, provider)
+	if githubUserDetails.Email == nil {
+		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, githubUserDetails, username, enums.GitHub)
 		if err != nil {
 			switch err {
 			case errors.ErrBadRequest:
@@ -143,13 +143,13 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
 	}
 
-	_, err = userS.GetUserWithEmail(*userDetails.Email)
+	_, err = userS.GetUserWithEmail(*githubUserDetails.Email)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		logger.Error(err)
 		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
 	}
 	if err == gorm.ErrRecordNotFound {
-		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, userDetails, username, provider)
+		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, githubUserDetails, username, enums.GitHub)
 		if err != nil {
 			switch err {
 			case errors.ErrBadRequest:
