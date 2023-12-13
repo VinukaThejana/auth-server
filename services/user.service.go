@@ -15,24 +15,23 @@ type User struct {
 
 // IsEmailAvailable is a function that is used to find out wether the email address is verified or not
 func (u *User) IsEmailAvailable(email string) (
-	userID *uuid.UUID,
 	isEmailAvailable,
 	isEmailVerified bool,
 	err error,
 ) {
 	var user models.User
-	err = u.Conn.DB.Select("id", "email", "verified").Where(&models.User{
+	err = u.Conn.DB.Select("email", "verified").Where(&models.User{
 		Email: email,
 	}).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, true, false, nil
+			return true, false, nil
 		}
 
-		return nil, false, false, err
+		return false, false, err
 	}
 
-	return user.ID, false, user.Verified, nil
+	return false, user.Verified, nil
 }
 
 // IsUsernameAvailable is a function that is used to check wether a username is available
