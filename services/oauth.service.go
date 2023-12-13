@@ -103,13 +103,14 @@ func (o *OAuth) GetGitHubUser(accessToken string) (schema *schemas.GitHub, err e
 	}
 
 	github := schemas.GitHub{
-		ID:        int(payload["id"].(float64)),
-		Name:      payload["name"].(string),
-		Username:  payload["login"].(string),
-		AvatarURL: payload["avatar_url"].(string),
-		Email:     nil,
+		ID:          int(payload["id"].(float64)),
+		Name:        payload["name"].(string),
+		Username:    payload["login"].(string),
+		AvatarURL:   payload["avatar_url"].(string),
+		AccessToken: accessToken,
+		Payload:     payload,
+		Email:       nil,
 	}
-	github.GetEmailFromPayload(payload)
 
 	return &github, nil
 }
