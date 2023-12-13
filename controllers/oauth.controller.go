@@ -191,10 +191,8 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 // GitHubOAuthRegisterWithUsername is a function that is used to register the GitHub user with the given username
 func (o *OAuth) GitHubOAuthRegisterWithUsername(c *fiber.Ctx) error {
 	username := c.Params("username", "")
-	fmt.Printf("username: %v\n", username)
 
 	oauthTokenC := c.Cookies("oauth_token")
-	fmt.Printf("oauthTokenC: %v\n", oauthTokenC)
 	if oauthTokenC == "" {
 		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrBadRequest)
 	}
@@ -229,12 +227,8 @@ func (o *OAuth) GitHubOAuthRegisterWithUsername(c *fiber.Ctx) error {
 		Conn: o.Conn,
 	}
 
-	fmt.Printf("tokenDetails.AccessToken: %v\n", tokenDetails.AccessToken)
-
 	githubUserDetails, err := oauthS.GetGitHubUser(tokenDetails.AccessToken)
-	fmt.Println("I am in this line 233")
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		if err == errors.ErrCouldNotGetUserFromOAuthProvider {
 			return c.Redirect("/oauth/github/redirect")
 		}
@@ -244,7 +238,6 @@ func (o *OAuth) GitHubOAuthRegisterWithUsername(c *fiber.Ctx) error {
 	}
 
 	user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, githubUserDetails, &username)
-	fmt.Printf("err: %v\n", err)
 	if err != nil {
 		switch err {
 		case errors.ErrBadRequest:
