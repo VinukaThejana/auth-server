@@ -517,3 +517,82 @@ func (a *AuthConfirmToken) Validate(tokenStr string) (token *jwt.Token, err erro
 
 	return token, nil
 }
+
+// OAuthToken is a struct that contians operations related to oauth access_token provided by oauth providers
+type OAuthToken struct {
+	Conn        *connect.Connector
+	Env         *config.Env
+	Provider    string
+	AccessToken string
+}
+
+// OAuthTokenDetails is a struct that contains the data that need to create an oauth token
+type OAuthTokenDetails struct {
+	Token       *string
+	ExpiresIn   *int64
+	TokenUUID   string
+	Provider    string
+	AccessToken string
+}
+
+// Create is a function that is used to create a new auth confirm token
+func (o *OAuthToken) Create() (tokenDetails *OAuthTokenDetails, err error) {
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	tokenDetails = &OAuthTokenDetails{
+		ExpiresIn:   new(int64),
+		Token:       new(string),
+		Provider:    o.Provider,
+		AccessToken: o.AccessToken,
+	}
+	*tokenDetails.ExpiresIn = now.Add(o.Env.AccessTokenExpires).Unix()
+	tokenDetails.TokenUUID = uid.String()
+
+	claims := make(jwt.MapClaims)
+	claims["sub"] = o.Provider
+	claims["token_uuid"] = tokenDetails.TokenUUID
+	claims["exp"] = tokenDetails.ExpiresIn
+	claims["iat"] = now.Unix()
+	claims["nbf"] = now.Unix()
+	claims["access_token"] = tokenDetails.AccessToken
+
+	*tokenDetails.Token, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(o.Env.OAuthTokenSecret))
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenDetails, nil
+}
+
+// Validate is a function that is used to validate the auth confirm token
+func (o *OAuthToken) Validate(tokenStr string) (token *jwt.Token, err error) {
+	token, err = jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected formating method")
+		}
+
+		return []byte(o.Env.OAuthTokenSecret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+// GetOAuthTokenDetails is a function that is used to get oauth token details
+func (o *OAuthToken) GetOAuthTokenDetails(token *jwt.Token) (user *OAuthTokenDetails, err error) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("cannot get details from the token")
+	}
+
+	return &OAuthTokenDetails{
+		Provider:    claims["sub"].(string),
+		AccessToken: claims["access_token"].(string),
+	}, nil
+}
