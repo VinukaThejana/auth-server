@@ -15,8 +15,6 @@ import (
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
-	"github.com/VinukaThejana/auth/validate"
-	"github.com/go-playground/validator/v10"
 )
 
 // OAuth struct contains services related oauth handlers
@@ -116,40 +114,20 @@ func (o *OAuth) GetGitHubUser(accessToken string) (schema *schemas.GitHub, err e
 	return &github, nil
 }
 
-// CreateGitHubUserByCheckingUsername is a function that is used to create a user by using the github oauth details by checking the availability
-// of the given username by GitHub oauth provider or the custom provided username by the user
-func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *schemas.GitHub, username *string) (user *models.User, err error) {
+// CreateGitHubUser is a function that is used to create a user in our database from the details obtained from the GitHub oauth provider
+func (o *OAuth) CreateGitHubUser(userS *User, userDetails *schemas.GitHub) (user *models.User, err error) {
+	err = checkGitHubEmailAvailability(userS, userDetails)
+	if err != nil {
+		return nil, err
+	}
+
 	ok, isVerified, err := userS.IsUsernameAvailable(userDetails.Username)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		if isVerified {
-			if username == nil {
-				return nil, errors.ErrAddAUsername
-			}
-
-			payload := struct {
-				username string `validate:"required,min=3,max=20,validate_username"`
-			}{
-				username: *username,
-			}
-			v := validator.New()
-			v.RegisterValidation("validate_username", validate.Username)
-			err := v.Struct(payload)
-			if err != nil {
-				return nil, errors.ErrBadRequest
-			}
-
-			ok, isVerified, err = userS.IsUsernameAvailable(payload.username)
-			if err != nil {
-				return nil, err
-			}
-			if !ok && isVerified {
-				return nil, errors.ErrUsernameAlreadyUsed
-			}
-
-			userDetails.Username = payload.username
+			return nil, errors.ErrAddAUsername
 		}
 		err = userS.DeleteUserWUsername(userDetails.Username)
 		if err != nil {
@@ -181,4 +159,66 @@ func (o *OAuth) CreateGitHubUserByCheckingUsername(userS *User, userDetails *sch
 	}
 
 	return &userM, nil
+}
+
+// CreateGithHubUserWithCustomUsername is a function that is used ro create a user in the dabtabase with details obtained from GitHub oauth
+// provider and the custom username provided by the user
+func (o *OAuth) CreateGithHubUserWithCustomUsername(userS *User, userDetails *schemas.GitHub, username string) (user *models.User, err error) {
+	err = checkGitHubEmailAvailability(userS, userDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	ok, isVerified, err := userS.IsUsernameAvailable(username)
+	if err != nil {
+		return nil, err
+	}
+
+	if !ok {
+		if isVerified {
+			return nil, errors.ErrUsernameAlreadyUsed
+		}
+
+		err = userS.DeleteUserWUsername(username)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var newUser models.User
+	newUser.Username = username
+	newUser.PhotoURL = userDetails.AvatarURL
+	newUser.Verified = true
+	if userDetails.Email != nil {
+		newUser.Email = *userDetails.Email
+	}
+
+	newUser, err = userS.Create(newUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &newUser, nil
+}
+
+func checkGitHubEmailAvailability(userS *User, userDetails *schemas.GitHub) error {
+	if userDetails.Email != nil {
+		ok, isVerified, err := userS.IsEmailAvailable(*userDetails.Email)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			if isVerified {
+				return errors.ErrLinkAccountWithEmail
+			}
+
+			err = userS.DeleteUserWEmail(*userDetails.Email)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
