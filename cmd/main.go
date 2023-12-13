@@ -137,7 +137,6 @@ func main() {
 		router.Route("/github", func(router fiber.Router) {
 			router.Get("/redirect", oauthC.RedirectToGitHubOAuthFlow)
 			router.Get("/callback", authM.GetUA, oauthC.GitHubCallback)
-		}, "github")
 	})
 
 	app.Route("/user", func(router fiber.Router) {
