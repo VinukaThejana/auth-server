@@ -82,7 +82,7 @@ func GenerateCookies(c *fiber.Ctx, user *models.User, conn *connect.Connector, e
 }
 
 // GenerateOAuthCookie is a function that is used to generate oauth token to manage oauth related activites
-func GenerateOAuthCookie(c *fiber.Ctx, conn *connect.Connector, env *config.Env, provider string, accessToken string) error {
+func GenerateOAuthCookie(c *fiber.Ctx, conn *connect.Connector, env *config.Env, accessToken, provider string) error {
 	oauthTokenS := token.OAuthToken{
 		Conn:        conn,
 		Env:         env,
