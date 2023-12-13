@@ -12,7 +12,9 @@ import (
 	"github.com/VinukaThejana/auth/services"
 	"github.com/VinukaThejana/auth/token"
 	"github.com/VinukaThejana/auth/utils"
+	"github.com/VinukaThejana/auth/validate"
 	"github.com/VinukaThejana/go-utils/logger"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -40,6 +42,12 @@ func (o *OAuth) RedirectToGitHubOAuthFlow(c *fiber.Ctx) error {
 
 // GitHubCallback is the callback handler that GitHub responds to
 func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
+	redirect := errors.Redirect{
+		C:        c,
+		Env:      o.Env,
+		Provider: enums.GitHub,
+	}
+
 	code := c.Query("code")
 
 	if code == "" {
@@ -64,10 +72,10 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 			err = errors.ErrInternalServerError
 		}
 
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
+		return redirect.WithState(err)
 	}
 	if accessToken == nil {
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+		return redirect.WithState(errors.ErrInternalServerError)
 	}
 
 	githubUserDetails, err := oauthS.GetGitHubUser(*accessToken)
@@ -78,10 +86,8 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 			err = errors.ErrUnauthorized
 		}
 
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
+		return redirect.WithState(err)
 	}
-
-	fmt.Printf("userDetails: %v\n", githubUserDetails)
 
 	var provderDetails models.OAuth
 	err = o.Conn.DB.Where(models.OAuth{
@@ -98,103 +104,74 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 				err = errors.ErrInternalServerError
 			}
 
-			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
+			return redirect.WithState(err)
 		}
 
 		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
 		if err != nil {
 			logger.Error(err)
-			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+			return redirect.WithState(err)
 		}
 
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
+		return redirect.WithState(nil)
 	}
 	if err != gorm.ErrRecordNotFound {
 		logger.Error(err)
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+		return redirect.WithState(errors.ErrInternalServerError)
 	}
-	githubUserDetails.GetEmailFromPayload()
+	err = githubUserDetails.GetEmailFromPayload()
+	if err != nil {
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
 
-	if githubUserDetails.Email == nil {
-		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, githubUserDetails, nil)
-		if err != nil {
-			switch err {
-			case errors.ErrBadRequest:
-				err = errors.ErrBadRequest
-			case errors.ErrUsernameAlreadyUsed:
-				err = errors.ErrUsernameAlreadyUsed
-			case errors.ErrAddAUsername:
-				err = utils.GenerateOAuthCookie(c, o.Conn, o.Env, *accessToken, enums.GitHub)
-				if err != nil {
-					logger.Error(err)
-					err = errors.ErrInternalServerError
-				} else {
-					err = errors.ErrAddAUsername
-				}
-			default:
-				logger.Error(err)
-				err = errors.ErrInternalServerError
-			}
-
-			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
-		}
-
-		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
-		if err != nil {
+	user, err := oauthS.CreateGitHubUser(&userS, githubUserDetails)
+	if err != nil {
+		switch err {
+		case errors.ErrBadRequest:
+			break
+		case errors.ErrAddAUsername:
+			break
+		case errors.ErrLinkAccountWithEmail:
+			break
+		default:
 			logger.Error(err)
-			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+			err = errors.ErrInternalServerError
 		}
 
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
+		return redirect.WithState(err)
 	}
 
-	_, err = userS.GetUserWithEmail(*githubUserDetails.Email)
-	if err != nil && err != gorm.ErrRecordNotFound {
+	err = utils.GenerateCookies(c, user, o.Conn, o.Env)
+	if err != nil {
 		logger.Error(err)
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
-	}
-	if err == gorm.ErrRecordNotFound {
-		user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, githubUserDetails, nil)
-		if err != nil {
-			switch err {
-			case errors.ErrBadRequest:
-				err = errors.ErrBadRequest
-			case errors.ErrUsernameAlreadyUsed:
-				err = errors.ErrUsernameAlreadyUsed
-			case errors.ErrAddAUsername:
-				err = utils.GenerateOAuthCookie(c, o.Conn, o.Env, *accessToken, enums.GitHub)
-				if err != nil {
-					logger.Error(err)
-					err = errors.ErrInternalServerError
-				} else {
-					err = errors.ErrAddAUsername
-				}
-			default:
-				logger.Error(err)
-				err = errors.ErrInternalServerError
-			}
-
-			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
-		}
-
-		err = utils.GenerateCookies(c, user, o.Conn, o.Env)
-		if err != nil {
-			logger.Error(err)
-			return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
-		}
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
+		redirect.WithState(errors.ErrInternalServerError)
 	}
 
-	return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrLinkAccountWithEmail)
+	return redirect.WithState(nil)
 }
 
-// GitHubOAuthRegisterWithUsername is a function that is used to register the GitHub user with the given username
-func (o *OAuth) GitHubOAuthRegisterWithUsername(c *fiber.Ctx) error {
-	username := c.Params("username", "")
+// AddUsernameGitHubOAuth is a function that is used to register the GitHub user with the given username
+func (o *OAuth) AddUsernameGitHubOAuth(c *fiber.Ctx) error {
+	var payload struct {
+		Username string `json:"username" validate:"required,min=3,max=20,validate_username"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	v.RegisterValidation("validate_username", validate.Username)
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
 
 	oauthTokenC := c.Cookies("oauth_token")
 	if oauthTokenC == "" {
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrBadRequest)
+		return c.Redirect("/oauth/github/redirect")
 	}
 
 	oauthTokenS := token.OAuthToken{
@@ -209,13 +186,13 @@ func (o *OAuth) GitHubOAuthRegisterWithUsername(c *fiber.Ctx) error {
 			return c.Redirect("/oauth/github/redirect")
 		}
 
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrBadRequest)
+		return errors.BadRequest(c)
 	}
 
 	tokenDetails, err := oauthTokenS.GetOAuthTokenDetails(token)
 	if err != nil {
 		logger.Error(err)
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+		return errors.InternalServerErr(c)
 	}
 
 	oauthS := services.OAuth{
@@ -234,29 +211,29 @@ func (o *OAuth) GitHubOAuthRegisterWithUsername(c *fiber.Ctx) error {
 		}
 
 		logger.Error(err)
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+		return errors.InternalServerErr(c)
 	}
 
-	user, err := oauthS.CreateGitHubUserByCheckingUsername(&userS, githubUserDetails, &username)
+	user, err := oauthS.CreateGithHubUserWithCustomUsername(&userS, githubUserDetails, payload.Username)
 	if err != nil {
 		switch err {
 		case errors.ErrBadRequest:
-			err = errors.ErrBadRequest
+			return errors.BadRequest(c)
 		case errors.ErrUsernameAlreadyUsed:
-			err = errors.ErrUsernameAlreadyUsed
+			return errors.UsernameAlreadyUsed(c)
+		case errors.ErrLinkAccountWithEmail:
+			return errors.LinkAccount(c)
 		default:
 			logger.Error(err)
-			err = errors.ErrInternalServerError
+			return errors.InternalServerErr(c)
 		}
-
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, err)
 	}
 
 	err = utils.GenerateCookies(c, user, o.Conn, o.Env)
 	if err != nil {
 		logger.Error(err)
-		return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, errors.ErrInternalServerError)
+		return errors.InternalServerErr(c)
 	}
 
-	return errors.OAuthStateRedirect(c, o.Env, enums.GitHub, nil)
+	return errors.Done(c)
 }
