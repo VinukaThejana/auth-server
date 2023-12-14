@@ -549,7 +549,7 @@ func (o *OAuthToken) Create() (tokenDetails *OAuthTokenDetails, err error) {
 		Provider:    o.Provider,
 		AccessToken: o.AccessToken,
 	}
-	*tokenDetails.ExpiresIn = now.Add(o.Env.AccessTokenExpires).Unix()
+	*tokenDetails.ExpiresIn = now.Add(o.Env.OAuthTokenExpires).Unix()
 	tokenDetails.TokenUUID = uid.String()
 
 	claims := make(jwt.MapClaims)
