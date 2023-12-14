@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
@@ -245,6 +246,12 @@ func (o *OAuth) AddUsernameGitHubOAuth(c *fiber.Ctx) error {
 		logger.Error(err)
 		return redirect.WithState(errors.ErrInternalServerError)
 	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:    "oauth_token",
+		Value:   "",
+		Expires: time.Now().Add(-time.Hour * 24),
+	})
 
 	return redirect.WithState(nil)
 }
