@@ -4,6 +4,7 @@ package errors
 import (
 	errs "errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VinukaThejana/auth/config"
@@ -193,13 +194,36 @@ type Redirect struct {
 	Provider string
 }
 
+// Param is a struct to be used to define url params to the redirect url
+type Param struct {
+	Key   string
+	Value string
+}
+
 // WithState is a fucntion that is used to redirect with error state
-func (r *Redirect) WithState(state error) error {
+func (r *Redirect) WithState(state error, params ...Param) error {
+	url := r.Env.FrontendURL
+	if len(params) != 0 {
+		for n, param := range params {
+			if n == 0 {
+				url = fmt.Sprintf("%s/?%s=%s", url, param.Key, param.Value)
+				continue
+			}
+
+			url = fmt.Sprintf("%s&%s=%s", url, param.Key, param.Value)
+		}
+	}
 	if state == nil {
-		return r.C.Redirect(r.Env.FrontendURL)
+		return r.C.Redirect(url)
 	}
 
-	return r.C.Redirect(fmt.Sprintf("%s?state=%s&provider=%s", r.Env.FrontendURL, state, r.Provider))
+	if strings.Contains(url, "?") {
+		url = fmt.Sprintf("%s&state=%s&provider=%s", url, state.Error(), r.Provider)
+	} else {
+		url = fmt.Sprintf("%s/?state=%s&provider=%s", url, state.Error(), r.Provider)
+	}
+
+	return r.C.Redirect(url)
 }
 
 // CheckDBError is a struc that is used to identify the database errors
