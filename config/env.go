@@ -41,6 +41,7 @@ type Env struct {
 	OAuthTokenExpires        time.Duration `mapstructure:"OAUTH_TOKEN_EXPIRED_IN" validate:"required"`
 	RedisRatelimiterPort     int           `mapstructure:"REDIS_RATELIMITER_PORT" validate:"required,number"`
 	AccessTokenMaxAge        int           `mapstructure:"ACCESS_TOKEN_MAXAGE" validate:"required,number"`
+	OAuthTokenMaxAge         int           `mapstructure:"OAUTH_TOKEN_MAXAGE" validate:"required,number"`
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
