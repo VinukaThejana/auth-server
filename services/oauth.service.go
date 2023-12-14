@@ -187,18 +187,28 @@ func (o *OAuth) CreateGithHubUserWithCustomUsername(userS *User, userDetails *sc
 
 	var newUser models.User
 	newUser.Username = username
+	newUser.Name = userDetails.Name
 	newUser.PhotoURL = userDetails.AvatarURL
 	newUser.Verified = true
 	if userDetails.Email != nil {
 		newUser.Email = *userDetails.Email
 	}
 
-	newUser, err = userS.Create(newUser)
+	userM, err := userS.Create(newUser)
 	if err != nil {
 		return nil, err
 	}
 
-	return &newUser, nil
+	err = o.Conn.DB.Create(&models.OAuth{
+		Provider:   enums.GitHub,
+		ProviderID: fmt.Sprint(userDetails.ID),
+		UserID:     userM.ID,
+	}).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &userM, nil
 }
 
 func checkGitHubEmailAvailability(userS *User, userDetails *schemas.GitHub) error {
