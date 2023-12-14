@@ -38,6 +38,7 @@ type Env struct {
 	RefreshTokenMaxAge       int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required,number"`
 	RefreshTokenExpires      time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN" validate:"required"`
 	AccessTokenExpires       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`
+	OAuthTokenExpires        time.Duration `mapstructure:"OAUTH_TOKEN_EXPIRED_IN" validate:"required"`
 	RedisRatelimiterPort     int           `mapstructure:"REDIS_RATELIMITER_PORT" validate:"required,number"`
 	AccessTokenMaxAge        int           `mapstructure:"ACCESS_TOKEN_MAXAGE" validate:"required,number"`
 }
