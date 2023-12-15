@@ -15,6 +15,9 @@ import (
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/schemas"
+	"github.com/VinukaThejana/auth/utils"
+	"github.com/dvsekhvalnov/jose2go/base64url"
+	"github.com/gofiber/fiber/v2"
 )
 
 // OAuth struct contains services related oauth handlers
@@ -231,4 +234,41 @@ func checkGitHubEmailAvailability(userS *User, userDetails *schemas.GitHub) erro
 	}
 
 	return nil
+}
+
+// PrepareLinkAccountWEmail is a function that is used to prepare to link oauht account with db account
+func (o *OAuth) PrepareLinkAccountWEmail(
+	c *fiber.Ctx,
+	userS *User,
+	details *schemas.BasicOAuthProvider,
+	accessToken,
+	provider string,
+) (
+	oauthUser *string,
+	dbUser *string,
+	err error,
+) {
+	err = utils.GenerateOAuthCookie(c, o.Conn, o.Env, accessToken, provider)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dbUserM, err := userS.GetUserWithEmail(*details.Email)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	oauthUserB, err := json.Marshal(details)
+	if err != nil {
+		return nil, nil, err
+	}
+	dbUserB, err := json.Marshal(schemas.FilterUser(*dbUserM))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	oauthUserBase64 := base64url.Encode(oauthUserB)
+	dbUserBase64 := base64url.Encode(dbUserB)
+
+	return &oauthUserBase64, &dbUserBase64, nil
 }
