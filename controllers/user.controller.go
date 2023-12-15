@@ -156,7 +156,5 @@ func (u *User) LogoutFromDevices(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }

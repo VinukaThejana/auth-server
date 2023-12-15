@@ -136,9 +136,7 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 
 	emailClient.SendConfirmation(newUser.Email)
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // LoginWEmailAndPassword is a funciton that is used to login the user with the email and password
@@ -271,9 +269,7 @@ func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 		Domain:   "localhost",
 	})
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // Logout is a function that is used to logout a user by clearing the access_token, refresh_token and the session token
@@ -320,9 +316,7 @@ func (a *Auth) Logout(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // CreateTOTP is a function that is used to create the user OTP
@@ -401,9 +395,7 @@ func reauthenticate(c *fiber.Ctx, a *Auth, userID string) error {
 		Domain:   "localhost",
 	})
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // ReAuthenticateWithPassword is a function that is used to reauthenticate the user with email and password
@@ -888,9 +880,7 @@ func (a *Auth) ResetTwoFactorAuthentication(c *fiber.Ctx) error {
 		Domain:   "localhost",
 	})
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // GetChallenge is a function that is used to get a crypographic challenge
@@ -1039,9 +1029,7 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // LoginWithPassKey is a function that is used to login with the PassKey
@@ -1283,9 +1271,7 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
 
 // DeletePassKey is a function that is used to delete a passkey
@@ -1325,7 +1311,5 @@ func (a *Auth) DeletePassKey(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }

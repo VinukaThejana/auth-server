@@ -7,7 +7,6 @@ import (
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
-	"github.com/VinukaThejana/auth/schemas"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/gofiber/fiber/v2"
 )
@@ -28,7 +27,5 @@ func (a *Admin) DeleteExpiredSessions(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
-	"github.com/VinukaThejana/auth/schemas"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -68,7 +67,5 @@ func (e *Email) ConfirmEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(fiber.StatusOK).JSON(schemas.Res{
-		Status: errors.Okay,
-	})
+	return errors.Done(c)
 }
