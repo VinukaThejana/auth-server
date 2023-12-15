@@ -454,8 +454,13 @@ func (s *SessionToken) GetUserDetails(token *jwt.Token) (user *schemas.User, err
 		return nil, fmt.Errorf("cannot get details from the token")
 	}
 
+	userID, err := uuid.Parse(claims["sub"].(string))
+	if err != nil {
+		return nil, err
+	}
+
 	return &schemas.User{
-		ID:               claims["sub"].(string),
+		ID:               &userID,
 		Name:             claims["name"].(string),
 		Username:         claims["username"].(string),
 		Email:            claims["email"].(string),

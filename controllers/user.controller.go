@@ -97,11 +97,6 @@ func (u *User) GetLoggedInDevices(c *fiber.Ctx) error {
 // LogoutFromDevices is a function that is used to logout from a given device
 func (u *User) LogoutFromDevices(c *fiber.Ctx) error {
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
 
 	var payload struct {
 		ID string `json:"id"`
@@ -120,7 +115,7 @@ func (u *User) LogoutFromDevices(c *fiber.Ctx) error {
 
 	err = u.Conn.DB.Delete(&models.Sessions{
 		ID:     &tokenUUID,
-		UserID: &userID,
+		UserID: user.ID,
 	}).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

@@ -4,7 +4,7 @@ go 1.21.1
 
 require github.com/spf13/viper v1.17.0
 
-require github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+require github.com/dvsekhvalnov/jose2go v1.5.0
 
 require (
 	github.com/VinukaThejana/go-utils/logger v0.0.0-20231010161001-94625009f8d2

@@ -4,6 +4,7 @@ package session
 import (
 	"github.com/VinukaThejana/auth/schemas"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 // Add is a function that is used to add ther user details to the session
@@ -23,7 +24,7 @@ func Add(c *fiber.Ctx, user *schemas.User) {
 // Get the user details from the session
 func Get(c *fiber.Ctx) (user *schemas.User) {
 	return &schemas.User{
-		ID:               c.Locals("id").(string),
+		ID:               c.Locals("id").(*uuid.UUID),
 		Name:             c.Locals("name").(string),
 		Username:         c.Locals("username").(string),
 		Email:            c.Locals("email").(string),

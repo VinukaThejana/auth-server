@@ -216,16 +216,10 @@ func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 	refreshTokenC := session.GetRefreshToken(c)
 	user := session.Get(c)
 
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
-
 	refreshTokenS := token.RefreshToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
-		UserID: userID,
+		UserID: *user.ID,
 	}
 
 	refreshToken, err := refreshTokenS.Get(refreshTokenC)
@@ -241,7 +235,7 @@ func (a *Auth) RefreshAccessToken(c *fiber.Ctx) error {
 	accessTokenS := token.AccessToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
-		UserID: userID,
+		UserID: *user.ID,
 	}
 
 	tokenDetails, err := accessTokenS.Create(refreshToken.TokenUUID)
@@ -277,16 +271,10 @@ func (a *Auth) Logout(c *fiber.Ctx) error {
 	refreshTokenC := session.GetRefreshToken(c)
 	user := session.Get(c)
 
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
-
 	refreshTokenS := token.RefreshToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
-		UserID: userID,
+		UserID: *user.ID,
 	}
 
 	refreshToken, err := refreshTokenS.Get(refreshTokenC)
@@ -310,7 +298,7 @@ func (a *Auth) Logout(c *fiber.Ctx) error {
 	}
 
 	tokenS.DeleteCookies(c)
-	err = tokenS.DeleteTokenData(userID, tokenUUID)
+	err = tokenS.DeleteTokenData(*user.ID, tokenUUID)
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)
@@ -329,7 +317,7 @@ func (a *Auth) CreateTOTP(c *fiber.Ctx) error {
 
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "auth",
-		AccountName: user.ID,
+		AccountName: user.ID.String(),
 		SecretSize:  15,
 	})
 	if err != nil {
@@ -348,14 +336,8 @@ func (a *Auth) CreateTOTP(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
-
 	err = userS.SetupTOTP2FactorVerification(models.OTP{
-		UserID:        &userID,
+		UserID:        user.ID,
 		Secret:        key.Secret(),
 		AuthURL:       key.URL(),
 		MemonicPhrase: memonic,
@@ -401,11 +383,6 @@ func reauthenticate(c *fiber.Ctx, a *Auth, userID string) error {
 // ReAuthenticateWithPassword is a function that is used to reauthenticate the user with email and password
 func (a *Auth) ReAuthenticateWithPassword(c *fiber.Ctx) error {
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
 
 	var payload struct {
 		Password string `json:"password" validate:"required,min=8,max=200,validate_password"`
@@ -418,7 +395,7 @@ func (a *Auth) ReAuthenticateWithPassword(c *fiber.Ctx) error {
 
 	v := validator.New()
 	v.RegisterValidation("validate_password", validate.Password)
-	err = v.Struct(payload)
+	err := v.Struct(payload)
 	if err != nil {
 		logger.Error(err)
 		return errors.BadRequest(c)
@@ -428,7 +405,7 @@ func (a *Auth) ReAuthenticateWithPassword(c *fiber.Ctx) error {
 		Conn: a.Conn,
 	}
 
-	userM, err := userS.GetUserWithID(userID)
+	userM, err := userS.GetUserWithID(*user.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return errors.BadRequest(c)
@@ -444,7 +421,7 @@ func (a *Auth) ReAuthenticateWithPassword(c *fiber.Ctx) error {
 		return errors.InCorrectCredentials(c)
 	}
 
-	return reauthenticate(c, a, user.ID)
+	return reauthenticate(c, a, user.ID.String())
 }
 
 // ReAuthenticateWithPassKey is a function that is used to reauthenticate with the users passkey
@@ -473,7 +450,7 @@ func (a *Auth) ReAuthenticateWithPassKey(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	if userID.String() != usera.ID {
+	if userID != *usera.ID {
 		return errors.BadRequest(c)
 	}
 
@@ -614,11 +591,6 @@ func (a *Auth) ReAuthenticateWithPassKey(c *fiber.Ctx) error {
 // VerifyTOTP is a function that is used to verify the TOTP token
 func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
 
 	var payload struct {
 		Code string `json:"code" validate:"required"`
@@ -630,7 +602,7 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 	}
 
 	v := validator.New()
-	err = v.Struct(payload)
+	err := v.Struct(payload)
 	if err != nil {
 		logger.Error(err)
 		return errors.BadRequest(c)
@@ -638,7 +610,7 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 
 	var otp models.OTP
 	err = a.Conn.DB.Where(&models.OTP{
-		UserID: &userID,
+		UserID: user.ID,
 	}).First(&otp).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -666,7 +638,7 @@ func (a *Auth) VerifyTOTP(c *fiber.Ctx) error {
 		Conn: a.Conn,
 	}
 
-	userM, err := userS.GetUserWithID(userID)
+	userM, err := userS.GetUserWithID(*user.ID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return errors.Unauthorized(c)
@@ -906,11 +878,6 @@ func (a *Auth) GetChallenge(c *fiber.Ctx) error {
 // CreatePassKey is a function that is used to create a PassKey
 func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
 
 	var payload struct {
 		Name string                          `json:"name" validate:"required,min=3,max=100"`
@@ -923,7 +890,7 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 	}
 
 	v := validator.New()
-	err = v.Struct(payload)
+	err := v.Struct(payload)
 	if err != nil {
 		logger.Error(err)
 		return errors.BadRequest(c)
@@ -1013,7 +980,7 @@ func (a *Auth) CreatePassKey(c *fiber.Ctx) error {
 
 	passKey := models.PassKeys{
 		Name:      payload.Name,
-		UserID:    &userID,
+		UserID:    user.ID,
 		PassKeyID: *body.CredentialID,
 		PublicKey: *body.CredentialPublicKey,
 		Count:     0,
@@ -1202,18 +1169,10 @@ func (a *Auth) GetPassKeys(c *fiber.Ctx) error {
 	}
 
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(res{
-			Status:   errors.ErrInternalServerError.Error(),
-			PassKeys: []models.PassKeys{},
-		})
-	}
 
 	var passKeys []models.PassKeys
-	err = a.Conn.DB.Where(&models.PassKeys{
-		UserID: &userID,
+	err := a.Conn.DB.Where(&models.PassKeys{
+		UserID: user.ID,
 	}).Find(&passKeys).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -1236,11 +1195,6 @@ func (a *Auth) GetPassKeys(c *fiber.Ctx) error {
 // EditPassKey is a function that is used to change a passkey name
 func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
 
 	var payload struct {
 		PassKeyID string `json:"passKeyID" validate:"required,min=2"`
@@ -1248,7 +1202,7 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 	}
 
 	v := validator.New()
-	err = v.Struct(payload)
+	err := v.Struct(payload)
 	if err != nil {
 		return errors.BadRequest(c)
 	}
@@ -1259,7 +1213,7 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 	}
 
 	err = a.Conn.DB.Model(&models.PassKeys{}).Where(&models.PassKeys{
-		UserID:    &userID,
+		UserID:    user.ID,
 		PassKeyID: payload.PassKeyID,
 	}).Update("name", payload.NewName).Error
 	if err != nil {
@@ -1277,11 +1231,6 @@ func (a *Auth) EditPassKey(c *fiber.Ctx) error {
 // DeletePassKey is a function that is used to delete a passkey
 func (a *Auth) DeletePassKey(c *fiber.Ctx) error {
 	user := session.Get(c)
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
 
 	var payload struct {
 		PassKeyID string `json:"passKeyID" validate:"required,min=2"`
@@ -1293,14 +1242,14 @@ func (a *Auth) DeletePassKey(c *fiber.Ctx) error {
 	}
 
 	v := validator.New()
-	err = v.Struct(payload)
+	err := v.Struct(payload)
 	if err != nil {
 		return errors.BadRequest(c)
 	}
 
 	err = a.Conn.DB.Delete(&models.PassKeys{
 		PassKeyID: payload.PassKeyID,
-		UserID:    &userID,
+		UserID:    user.ID,
 	}).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

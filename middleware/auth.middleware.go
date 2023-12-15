@@ -13,7 +13,6 @@ import (
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/dvsekhvalnov/jose2go/base64url"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 // Auth contains auth related middlewares
@@ -79,16 +78,10 @@ func (a *Auth) Check(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		errors.InternalServerErr(c)
-	}
-
 	accessTokenS := token.AccessToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
-		UserID: userID,
+		UserID: *user.ID,
 	}
 
 	isValid, err := accessTokenS.Validate(accessToken)
@@ -138,16 +131,10 @@ func (a *Auth) CheckRefreshToken(c *fiber.Ctx) error {
 		return errors.InternalServerErr(c)
 	}
 
-	userID, err := uuid.Parse(user.ID)
-	if err != nil {
-		logger.Error(err)
-		return errors.InternalServerErr(c)
-	}
-
 	refreshTokenS := token.RefreshToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
-		UserID: userID,
+		UserID: *user.ID,
 	}
 
 	isValid, err := refreshTokenS.Validate(refreshTokenC)
@@ -187,7 +174,7 @@ func (a *Auth) CheckReAuthToken(c *fiber.Ctx) error {
 	reAuthTokenS := token.AuthConfirmToken{
 		Conn:   a.Conn,
 		Env:    a.Env,
-		UserID: user.ID,
+		UserID: user.ID.String(),
 	}
 
 	_, err := reAuthTokenS.Validate(reAuthToken)
