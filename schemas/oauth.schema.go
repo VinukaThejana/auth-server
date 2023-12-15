@@ -30,8 +30,8 @@ type GitHub struct {
 }
 
 // FilterToBasicOAuth is a function that is used to generate basic oauth feilds from the GitHub oauth provider
-func (g *GitHub) FilterToBasicOAuth() BasicOAuthProvider {
-	return BasicOAuthProvider{
+func (g *GitHub) FilterToBasicOAuth() *BasicOAuthProvider {
+	return &BasicOAuthProvider{
 		Email:    g.Email,
 		ID:       fmt.Sprint(g.ID),
 		Name:     g.Name,
