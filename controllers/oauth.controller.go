@@ -291,3 +291,105 @@ func (o *OAuth) AddUsernameGitHubOAuth(c *fiber.Ctx) error {
 
 	return redirect.WithState(nil)
 }
+
+// LinkAccountsWGitHubProvider is a function that is used to link exsisting account with the GitHub provider
+func (o *OAuth) LinkAccountsWGitHubProvider(c *fiber.Ctx) error {
+	redirect := errors.Redirect{
+		C:        c,
+		Env:      o.Env,
+		Provider: enums.GitHub,
+	}
+
+	oauthTokenC := c.Cookies("oauth_token")
+	if oauthTokenC == "" {
+		return c.Redirect("/oauth/github/redirect")
+	}
+
+	oauthTokenS := token.OAuthToken{
+		Conn:     o.Conn,
+		Env:      o.Env,
+		Provider: enums.GitHub,
+	}
+
+	token, err := oauthTokenS.Validate(oauthTokenC)
+	if err != nil {
+		if isExpired := (errors.CheckTokenError{}.Expired(err)); isExpired {
+			return c.Redirect("/oauth/github/redirect")
+		}
+
+		return redirect.WithState(errors.ErrBadRequest)
+	}
+
+	tokenDetails, err := oauthTokenS.GetOAuthTokenDetails(token)
+	if err != nil {
+		logger.Error(err)
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
+
+	oauthS := services.OAuth{
+		Conn: o.Conn,
+		Env:  o.Env,
+	}
+
+	userS := services.User{
+		Conn: o.Conn,
+	}
+
+	providerUserDetails, err := oauthS.GetGitHubUser(tokenDetails.AccessToken)
+	if err != nil {
+		if err == errors.ErrCouldNotGetUserFromOAuthProvider {
+			return c.Redirect("/oauth/github/redirect")
+		}
+
+		logger.Error(err)
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
+
+	var providerDetails models.OAuth
+	err = o.Conn.DB.Where(&models.OAuth{
+		Provider:   enums.GitHub,
+		ProviderID: fmt.Sprint(providerUserDetails.ID),
+	}).First(&providerDetails).Error
+	if err == nil {
+		return redirect.WithState(errors.ErrBadRequest)
+	} else if err != gorm.ErrRecordNotFound {
+		logger.Error(err)
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
+
+	err = providerUserDetails.GetEmailFromPayload()
+	if err != nil {
+		logger.Error(err)
+		return redirect.WithState(errors.ErrIncorrectCredentials)
+	}
+	if providerUserDetails.Email == nil {
+		return redirect.WithState(errors.ErrBadRequest)
+	}
+
+	user, err := userS.GetUserWithEmail(*providerUserDetails.Email)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return redirect.WithState(errors.ErrBadRequest)
+		}
+		logger.Error(err)
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
+
+	err = o.Conn.DB.Create(&models.OAuth{
+		Provider:   enums.GitHub,
+		ProviderID: fmt.Sprint(providerUserDetails.ID),
+		UserID:     user.ID,
+	}).Error
+	if err != nil {
+		logger.Error(err)
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
+
+	err = utils.GenerateCookies(c, user, o.Conn, o.Env)
+	if err != nil {
+		logger.Error(err)
+		return redirect.WithState(errors.ErrInternalServerError)
+	}
+
+	return redirect.WithState(nil)
+}

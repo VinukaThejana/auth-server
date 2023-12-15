@@ -138,6 +138,7 @@ func main() {
 			router.Get("/redirect", oauthC.RedirectToGitHubOAuthFlow)
 			router.Get("/callback", authM.GetUA, oauthC.GitHubCallback)
 			router.Get("/add/username/:username", authM.GetUA, oauthC.AddUsernameGitHubOAuth)
+			router.Get("/link", authM.GetUA, oauthC.LinkAccountsWGitHubProvider)
 		})
 	})
 
