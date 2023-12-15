@@ -15,6 +15,7 @@ type BasicOAuthProvider struct {
 	ID       string
 	Name     string
 	Username string
+	PhotoURL string
 }
 
 // GitHub is a struct that contains details received from the GitHub oauth provider
@@ -26,6 +27,17 @@ type GitHub struct {
 	Username    string                 `json:"login"`
 	AvatarURL   string                 `json:"avatar_url"`
 	ID          int                    `json:"id"`
+}
+
+// FilterToBasicOAuth is a function that is used to generate basic oauth feilds from the GitHub oauth provider
+func (g *GitHub) FilterToBasicOAuth() BasicOAuthProvider {
+	return BasicOAuthProvider{
+		Email:    g.Email,
+		ID:       fmt.Sprint(g.ID),
+		Name:     g.Name,
+		Username: g.Username,
+		PhotoURL: g.AvatarURL,
+	}
 }
 
 // GetEmailFromPayload is a helper method on GitHub to extract the email address from the payload received from GitHub
