@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"time"
@@ -11,13 +10,11 @@ import (
 	"github.com/VinukaThejana/auth/enums"
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
-	"github.com/VinukaThejana/auth/schemas"
 	"github.com/VinukaThejana/auth/services"
 	"github.com/VinukaThejana/auth/token"
 	"github.com/VinukaThejana/auth/utils"
 	"github.com/VinukaThejana/auth/validate"
 	"github.com/VinukaThejana/go-utils/logger"
-	"github.com/dvsekhvalnov/jose2go/base64url"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -142,24 +139,13 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 				err = errors.ErrAddAUsername
 			}
 		case errors.ErrLinkAccountWithEmail:
-			err = utils.GenerateOAuthCookie(c, o.Conn, o.Env, *accessToken, enums.GitHub)
-			if err != nil {
-				logger.Error(err)
-				return redirect.WithState(errors.ErrInternalServerError)
-			}
-
-			exsistingUser, err := userS.GetUserWithEmail(*providerUserDetails.Email)
-			if err != nil {
-				logger.Error(err)
-				return redirect.WithState(errors.ErrInternalServerError)
-			}
-
-			providerUser, err := json.Marshal(providerUserDetails)
-			if err != nil {
-				logger.Error(err)
-				return redirect.WithState(err)
-			}
-			dbUser, err := json.Marshal(schemas.FilterUser(*exsistingUser))
+			oauthUser, dbUser, err := oauthS.PrepareLinkAccountWEmail(
+				c,
+				&userS,
+				providerUserDetails.FilterToBasicOAuth(),
+				*accessToken,
+				enums.GitHub,
+			)
 			if err != nil {
 				logger.Error(err)
 				return redirect.WithState(errors.ErrInternalServerError)
@@ -167,10 +153,10 @@ func (o *OAuth) GitHubCallback(c *fiber.Ctx) error {
 
 			return redirect.WithState(errors.ErrLinkAccountWithEmail, errors.Param{
 				Key:   "provider_user",
-				Value: base64url.Encode(providerUser),
+				Value: *oauthUser,
 			}, errors.Param{
 				Key:   "db_user",
-				Value: base64url.Encode(dbUser),
+				Value: *dbUser,
 			})
 		default:
 			logger.Error(err)
@@ -264,24 +250,13 @@ func (o *OAuth) AddUsernameGitHubOAuth(c *fiber.Ctx) error {
 		case errors.ErrUsernameAlreadyUsed:
 			break
 		case errors.ErrLinkAccountWithEmail:
-			err = utils.GenerateOAuthCookie(c, o.Conn, o.Env, tokenDetails.AccessToken, enums.GitHub)
-			if err != nil {
-				logger.Error(err)
-				return redirect.WithState(errors.ErrInternalServerError)
-			}
-
-			exsistingUser, err := userS.GetUserWithEmail(*providerUserDetails.Email)
-			if err != nil {
-				logger.Error(err)
-				return redirect.WithState(errors.ErrInternalServerError)
-			}
-
-			providerUser, err := json.Marshal(providerUserDetails)
-			if err != nil {
-				logger.Error(err)
-				return redirect.WithState(err)
-			}
-			dbUser, err := json.Marshal(schemas.FilterUser(*exsistingUser))
+			oauthUser, dbUser, err := oauthS.PrepareLinkAccountWEmail(
+				c,
+				&userS,
+				providerUserDetails.FilterToBasicOAuth(),
+				tokenDetails.AccessToken,
+				enums.GitHub,
+			)
 			if err != nil {
 				logger.Error(err)
 				return redirect.WithState(errors.ErrInternalServerError)
@@ -289,10 +264,10 @@ func (o *OAuth) AddUsernameGitHubOAuth(c *fiber.Ctx) error {
 
 			return redirect.WithState(errors.ErrLinkAccountWithEmail, errors.Param{
 				Key:   "provider_user",
-				Value: base64url.Encode(providerUser),
+				Value: *oauthUser,
 			}, errors.Param{
 				Key:   "db_user",
-				Value: base64url.Encode(dbUser),
+				Value: *dbUser,
 			})
 		default:
 			logger.Error(err)
