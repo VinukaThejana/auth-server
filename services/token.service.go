@@ -64,4 +64,16 @@ func (t *Token) DeleteCookies(c *fiber.Ctx) {
 		Value:   "",
 		Expires: expired,
 	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:    "reauth_token",
+		Value:   "",
+		Expires: expired,
+	})
+
+	c.Cookie(&fiber.Cookie{
+		Name:    "oauth_token",
+		Value:   "",
+		Expires: expired,
+	})
 }
