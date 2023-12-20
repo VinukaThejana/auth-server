@@ -11,7 +11,10 @@ type RefreshTokenMetadata struct {
 	IPAddress    string
 	City         string
 	Country      string
+	Query        string
 	RegionName   string
+	Timezone     string
+	Zip          string
 	DeviceVendor string
 	DeviceModel  string
 	OSName       string
