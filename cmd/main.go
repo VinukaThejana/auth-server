@@ -40,6 +40,7 @@ func init() {
 
 	conn.InitRatelimiter(&env)
 	conn.InitRedis(&env)
+	conn.InitMinioClient(&env)
 
 	authM = middleware.Auth{
 		Conn: &conn,

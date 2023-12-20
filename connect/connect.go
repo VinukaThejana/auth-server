@@ -3,6 +3,7 @@ package connect
 
 import (
 	"github.com/gofiber/storage/redis"
+	"github.com/minio/minio-go/v7"
 	"gorm.io/gorm"
 )
 
@@ -11,4 +12,5 @@ type Connector struct {
 	DB         *gorm.DB
 	Ratelimter *redis.Storage
 	R          *Redis
+	M          *minio.Client
 }
