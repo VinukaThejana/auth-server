@@ -12,7 +12,6 @@ type Sessions struct {
 	UserID       *uuid.UUID `gorm:"uuid"`
 	LoginAt      time.Time  `gorm:"not null;default:now()"`
 	IPAddress    string     `gorm:"default:null"`
-	Location     string     `gorm:"default:null"`
 	DeviceVendor string     `gorm:"default:null"`
 	DeviceModel  string     `gorm:"default:null"`
 	OSName       string     `gorm:"default:null"`
@@ -22,7 +21,7 @@ type Sessions struct {
 	RegionName   string     `gorm:"default:null"`
 	Timezone     string     `gorm:"default:null"`
 	Zip          string     `gorm:"default:null"`
-	Lat          string     `gorm:"default:null"`
-	Lon          string     `gorm:"default:null"`
+	Lat          float32    `gorm:"default:null"`
+	Lon          float32    `gorm:"default:null"`
 	ExpiresAt    int64      `gorm:"not null"`
 }
