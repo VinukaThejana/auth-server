@@ -17,5 +17,12 @@ type Sessions struct {
 	DeviceModel  string     `gorm:"default:null"`
 	OSName       string     `gorm:"default:null"`
 	OSVersion    string     `gorm:"default:null"`
+	Country      string     `gorm:"default:null"`
+	City         string     `gorm:"default:null"`
+	RegionName   string     `gorm:"default:null"`
+	Timezone     string     `gorm:"default:null"`
+	Zip          string     `gorm:"default:null"`
+	Lat          string     `gorm:"default:null"`
+	Lon          string     `gorm:"default:null"`
 	ExpiresAt    int64      `gorm:"not null"`
 }
