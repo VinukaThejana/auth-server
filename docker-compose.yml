@@ -9,6 +9,17 @@ services:
       - auth_postgres_db:/data
     env_file:
       - ./.env
+  minio:
+    container_name: minio
+    image: quay.io/minio/minio:RELEASE.2023-12-14T18-51-57Z
+    volumes:
+      - auth_mino_storage:/data
+    ports:
+      - "9001:9000"
+    environment:
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+    command: server /data
   redis_session:
     image: redis:alpine
     container_name: redis_session
@@ -51,3 +62,4 @@ volumes:
   auth_redis_email_db:
   auth_redis_system:
   auth_redis_challenge:
+  auth_mino_storage:
