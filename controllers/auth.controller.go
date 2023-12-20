@@ -25,6 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
 	"github.com/pquerna/otp/totp"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/bcrypt"
@@ -302,6 +303,18 @@ func (a *Auth) Logout(c *fiber.Ctx) error {
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)
+	}
+
+	err = a.Conn.M.RemoveObject(
+		context.Background(),
+		"sessions",
+		fmt.Sprintf("%s/%s", user.ID.String(), tokenUUID.String()),
+		minio.RemoveObjectOptions{
+			GovernanceBypass: true,
+		},
+	)
+	if err != nil {
+		logger.Error(err)
 	}
 
 	return errors.Done(c)
