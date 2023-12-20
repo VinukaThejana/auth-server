@@ -1,6 +1,12 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
 	"github.com/VinukaThejana/auth/models"
@@ -27,14 +33,73 @@ func GenerateCookies(c *fiber.Ctx, user *models.User, conn *connect.Connector, e
 		Env:  env,
 	}
 
+	var ip string
+
 	ua := session.GetUA(c)
+	url := "http://ip-api.com/json"
+	if config.GetDevEnv(env) == config.Prod {
+		ip = c.IP()
+		url = fmt.Sprintf("%s/%s", url, c.IP())
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	client := http.Client{
+		Timeout: 30 * time.Second,
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to retrieve the ip address")
+	}
+
+	var payload struct {
+		City       string  `json:"city"`
+		Country    string  `json:"country"`
+		Query      string  `json:"query"`
+		RegionName string  `json:"regionName"`
+		Timezone   string  `json:"timezone"`
+		Zip        string  `json:"zip"`
+		Lat        float32 `json:"lat"`
+		Lon        float32 `json:"lon"`
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(body, &payload)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("could not get ip address metadata")
+	}
+	if config.GetDevEnv(env) != config.Prod {
+		ip = payload.Query
+	}
+	if ip == "" {
+		return fmt.Errorf("failed parsing ip metadata")
+	}
 
 	refreshTokenD, err := refreshTokenS.Create(schemas.RefreshTokenMetadata{
-		IPAddress:    c.IP(),
+		IPAddress:    ip,
 		DeviceVendor: ua.Device.Vendor,
 		DeviceModel:  ua.Device.Model,
 		OSName:       ua.OS.Name,
 		OSVersion:    ua.OS.Version,
+		Country:      payload.Country,
+		City:         payload.City,
+		RegionName:   payload.RegionName,
+		Timezone:     payload.Timezone,
+		Zip:          payload.Zip,
+		Lat:          payload.Lat,
+		Lon:          payload.Lon,
 	})
 	if err != nil {
 		return err
