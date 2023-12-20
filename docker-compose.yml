@@ -11,7 +11,7 @@ services:
       - ./.env
   minio:
     container_name: minio
-    image: quay.io/minio/minio:RELEASE.2023-12-14T18-51-57Z
+    image: quay.io/minio/minio:latest
     volumes:
       - auth_mino_storage:/data
     ports:
