@@ -35,6 +35,7 @@ type Env struct {
 	FrontendHostname         string        `mapstructure:"FRONTEND_HOSTNAME" validate:"required,hostname"`
 	FrontendURL              string        `mapstructure:"FRONTEND_URL" validate:"required,url"`
 	AdminSecret              string        `mapstructure:"ADMIN_SECRET" validate:"required"`
+	GoogleMapsAPISecret      string        `mapstructure:"GOOGLE_MAPS_STATIC_API_KEY" validate:"required"`
 	RefreshTokenMaxAge       int           `mapstructure:"REFRESH_TOKEN_MAXAGE" validate:"required,number"`
 	RefreshTokenExpires      time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN" validate:"required"`
 	AccessTokenExpires       time.Duration `mapstructure:"ACCESS_TOKEN_EXPIRED_IN" validate:"required"`
