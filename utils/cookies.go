@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"github.com/VinukaThejana/auth/session"
 	"github.com/VinukaThejana/auth/token"
 	"github.com/gofiber/fiber/v2"
+	"github.com/minio/minio-go/v7"
 )
 
 // GenerateCookies is a function that is used to generate cookies that are used to login the user
@@ -104,6 +106,31 @@ func GenerateCookies(c *fiber.Ctx, user *models.User, conn *connect.Connector, e
 	if err != nil {
 		return err
 	}
+	res, err = http.Get(fmt.Sprintf(
+		"https://maps.googleapis.com/maps/api/staticmap?center=%s,%s&zoom=16&size=400x250&key=%s",
+		fmt.Sprint(payload.Lat),
+		fmt.Sprint(payload.Lon),
+		env.GoogleMapsAPISecret,
+	))
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = conn.M.PutObject(
+		context.Background(),
+		"sessions",
+		fmt.Sprintf("%s/%s", user.ID.String(), refreshTokenD.TokenUUID),
+		res.Body,
+		res.ContentLength,
+		minio.PutObjectOptions{
+			ContentType: "application/octet-stream",
+		},
+	)
+	if err != nil {
+		return err
+	}
+
 	accessTokenD, err := accessTokenS.Create(refreshTokenD.TokenUUID)
 	if err != nil {
 		return err

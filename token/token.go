@@ -82,6 +82,12 @@ func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetai
 		return nil, err
 	}
 
+	protocol := "https"
+	if config.GetDevEnv(r.Env) != config.Prod {
+		protocol = "http"
+	}
+	mapsURL := fmt.Sprintf("%s://%s/sessions/%s/%s", protocol, r.Env.MinioEndpoint, r.UserID.String(), tokenUUID.String())
+
 	err = r.Conn.DB.Create(&models.Sessions{
 		ID:           &tokenUUID,
 		UserID:       &r.UserID,
@@ -95,6 +101,7 @@ func (r *RefreshToken) Create(metadata schemas.RefreshTokenMetadata) (tokenDetai
 		RegionName:   metadata.RegionName,
 		Timezone:     metadata.Timezone,
 		Zip:          metadata.Zip,
+		MapURL:       mapsURL,
 		Lat:          metadata.Lat,
 		Lon:          metadata.Lon,
 		LoginAt:      now,
