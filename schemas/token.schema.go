@@ -19,6 +19,7 @@ type RefreshTokenMetadata struct {
 	DeviceModel  string
 	OSName       string
 	OSVersion    string
+	MapsURL      string
 	Lat          float32
 	Lon          float32
 }

@@ -20,6 +20,7 @@ type Sessions struct {
 	City         string     `gorm:"default:null"`
 	RegionName   string     `gorm:"default:null"`
 	Timezone     string     `gorm:"default:null"`
+	MapURL       string     `gorm:"default:null"`
 	Zip          string     `gorm:"default:null"`
 	Lat          float32    `gorm:"default:null"`
 	Lon          float32    `gorm:"default:null"`
