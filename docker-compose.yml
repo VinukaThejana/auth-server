@@ -15,11 +15,12 @@ services:
     volumes:
       - auth_mino_storage:/data
     ports:
-      - "9001:9000"
+      - "${FORWARD_MINIO_PORT:-9000}:9000"
+      - "${FORWARD_MINIO_CONSOLE_PORT:-9090}:9090"
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
-    command: server /data
+    command: server /data --console-address ":9090"
   redis_session:
     image: redis:alpine
     container_name: redis_session
