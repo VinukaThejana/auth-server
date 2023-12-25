@@ -17,6 +17,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -146,6 +147,81 @@ func (u *User) LogoutFromDevices(c *fiber.Ctx) error {
 	}
 
 	err = u.Conn.R.Session.Del(ctx, details.AccessTokenUUID).Err()
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return errors.Done(c)
+}
+
+// IsPasswordSet is a function that is used to check wether the user have set the password or not
+func (u *User) IsPasswordSet(c *fiber.Ctx) error {
+	user := session.Get(c)
+
+	var userM models.User
+	err := u.Conn.DB.Select("password").Where(&models.User{
+		ID: user.ID,
+	}).First(&userM).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.Unauthorized(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"is_password_set": userM.Password != "",
+	})
+}
+
+// AddPassword is a function that is used to add a passowrd for a user where the password is not present
+func (u *User) AddPassword(c *fiber.Ctx) error {
+	var payload struct {
+		Password string `json:"password" validate:"required,min=8,max=200,validate_password"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	v.RegisterValidation("validate_password", validate.Password)
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	user := session.Get(c)
+	userS := services.User{
+		Conn: u.Conn,
+	}
+
+	userM, err := userS.GetUserWithID(*user.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.Unauthorized(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	if userM.Password != "" {
+		return errors.BadRequest(c)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(""), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	userM.Password = string(hashedPassword)
+	err = u.Conn.DB.Save(userM).Error
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)

@@ -148,6 +148,9 @@ func main() {
 			router.Get("/list", authM.Check, userC.GetLoggedInDevices)
 			router.Post("/remove", authM.Check, authM.CheckReAuthToken, userC.LogoutFromDevices)
 		})
+
+		router.Get("/is_password_set", authM.Check, userC.IsPasswordSet)
+		router.Post("/add_password", authM.Check, userC.AddPassword)
 	})
 
 	app.Route("/admin", func(router fiber.Router) {
