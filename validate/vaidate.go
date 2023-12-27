@@ -49,8 +49,8 @@ func LoginWithEmailOrUsernameAndPassword(fl validator.FieldLevel) bool {
 	return regex.MatchString(username)
 }
 
-// OTPValidation is a function that is used to ensure the that the OTP code is in the proper format
-func OTPValidation(fl validator.FieldLevel) bool {
+// OTP is a function that is used to ensure the that the OTP code is in the proper format
+func OTP(fl validator.FieldLevel) bool {
 	regex, err := regexp.Compile(`^\d{3}-\d{3}$`)
 	if err != nil {
 		return false
