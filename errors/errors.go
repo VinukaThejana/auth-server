@@ -34,6 +34,7 @@ var (
 	ErrTwoFactorverificationNotEnabled         = fmt.Errorf("two_factor_verification_not_enabled")
 	ErrContinueWithTwoFactorAuthentication     = fmt.Errorf("continue_with_two_factor_authentication")
 	ErrOTPTokenIsNotValid                      = fmt.Errorf("otp_token_is_not_valid")
+	ErrOTPTokenExpires                         = fmt.Errorf("otp_token_expired")
 	ErrMemonicPhraseIsNotValid                 = fmt.Errorf("memonic_phrase_not_valid")
 	ErrReAuthTokenNotPresent                   = fmt.Errorf("reauth_token_not_present")
 	ErrVerifyYourEmailAddressFirst             = fmt.Errorf("verify_your_email_address_first")
@@ -142,6 +143,10 @@ func ContinueWithTwoFactorAuthentication(c *fiber.Ctx, user schemas.User) error 
 
 func OTPTokenIsNotValid(c *fiber.Ctx) error {
 	return badrequest(c, ErrOTPTokenIsNotValid)
+}
+
+func OTPTokenExpired(c *fiber.Ctx) error {
+	return badrequest(c, ErrBadRequest)
 }
 
 func MemonicPhraseIsNotMatching(c *fiber.Ctx) error {
