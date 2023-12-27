@@ -16,16 +16,14 @@ func Username(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	username := fl.Field().String()
-	return regex.MatchString(username)
+	return regex.MatchString(fl.Field().String())
 }
 
 // Password is custom validation function that is used to validate passwords
 func Password(fl validator.FieldLevel) bool {
 	const minEntropy = 60
-	password := fl.Field().String()
 
-	err := passwordvalidator.Validate(password, minEntropy)
+	err := passwordvalidator.Validate(fl.Field().String(), minEntropy)
 	return err == nil
 }
 
