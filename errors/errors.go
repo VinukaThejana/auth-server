@@ -45,6 +45,7 @@ var (
 	ErrCouldNotGetUserFromOAuthProvider        = fmt.Errorf("could_not_parse_user_from_oauth_provider")
 	ErrEnterANewUsername                       = fmt.Errorf("enter_a_new_username")
 	ErrLinkAccountWithEmail                    = fmt.Errorf("link_account_with_exsisting_email")
+	ErrEmailIsNotVerified                      = fmt.Errorf("email_is_not_verified")
 	Okay                                       = "okay"
 )
 
@@ -122,6 +123,10 @@ func NoAccountWithEmail(c *fiber.Ctx) error {
 
 func NoAccountWithUsername(c *fiber.Ctx) error {
 	return badrequest(c, ErrNoAccountWithUsername)
+}
+
+func EmailIsNotVerified(c *fiber.Ctx) error {
+	return badrequest(c, ErrEmailIsNotVerified)
 }
 
 func TwoFactorVerificationNotEnabled(c *fiber.Ctx) error {
