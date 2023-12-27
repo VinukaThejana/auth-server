@@ -214,13 +214,70 @@ func (u *User) AddPassword(c *fiber.Ctx) error {
 		return errors.BadRequest(c)
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(""), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
 
 	userM.Password = string(hashedPassword)
+	err = u.Conn.DB.Save(userM).Error
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return errors.Done(c)
+}
+
+// ChangePassword is a function that is used to change the password of the logged in user
+func (u *User) ChangePassword(c *fiber.Ctx) error {
+	var payload struct {
+		Password    string `json:"password" validate:"required,min=8,max=200,validate_password"`
+		OldPassword string `json:"old_password" validate:"required"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v := validator.New()
+	v.RegisterValidation("validate_password", validate.Password)
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	user := session.Get(c)
+	userS := services.User{
+		Conn: u.Conn,
+	}
+
+	userM, err := userS.GetUserWithID(*user.ID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.Unauthorized(c)
+		}
+
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(userM.Password), []byte(payload.OldPassword))
+	if err != nil {
+		logger.Error(err)
+		return errors.Unauthorized(c)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	userM.Password = string(hashedPassword)
+
 	err = u.Conn.DB.Save(userM).Error
 	if err != nil {
 		logger.Error(err)

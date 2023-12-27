@@ -152,6 +152,7 @@ func main() {
 		router.Route("/password", func(router fiber.Router) {
 			router.Get("/status", authM.Check, userC.IsPasswordSet)
 			router.Post("/add", authM.Check, userC.AddPassword)
+			router.Post("/change", authM.Check, userC.ChangePassword)
 		})
 	})
 
