@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VinukaThejana/go-utils/logger"
@@ -49,9 +51,19 @@ type Env struct {
 }
 
 // Load is a function that is used to laod the env variables from the file and the enviroment
-func (e *Env) Load() {
-	viper.AddConfigPath(".")
-	viper.SetConfigFile(".env")
+func (e *Env) Load(path ...string) {
+	configPath := "."
+	configFile := ".env"
+	if len(path) > 0 {
+		configPath = path[0]
+		if strings.HasSuffix(path[0], "/") {
+			configFile = fmt.Sprintf("%s.env", path[0])
+		} else {
+			configFile = fmt.Sprintf("%s/.env", path[0])
+		}
+	}
+	viper.AddConfigPath(configPath)
+	viper.SetConfigFile(configFile)
 	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
