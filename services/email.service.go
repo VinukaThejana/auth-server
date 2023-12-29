@@ -90,9 +90,9 @@ func (e *Email) ResetPassword(userID uuid.UUID, email string) error {
 	)
 	err := e.Conn.R.Challenge.SetNX(
 		context.Background(),
-		fmt.Sprintf("%s_pw_reset", userID.String()),
 		otp,
-		time.Second*60*60*2,
+		userID.String(),
+		time.Second*60*60*1,
 	).Err()
 	if err != nil {
 		return err
