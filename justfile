@@ -54,3 +54,4 @@ test argv1 argv2 argument1="" argument2="" argument3="" argument4="":
 
 env:
   doppler secrets download --no-file --format env > .env
+  cp .env ./api/Auth\ server
