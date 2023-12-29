@@ -153,6 +153,8 @@ func main() {
 			router.Get("/status", authM.Check, userC.IsPasswordSet)
 			router.Post("/add", authM.Check, userC.AddPassword)
 			router.Post("/change", authM.Check, userC.ChangePassword)
+			router.Patch("/reset", userC.ResetPassword)
+			router.Post("/reset", userC.ResetPassword)
 		})
 	})
 

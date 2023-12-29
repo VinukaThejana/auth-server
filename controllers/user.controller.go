@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
@@ -280,6 +281,104 @@ func (u *User) ChangePassword(c *fiber.Ctx) error {
 
 	err = u.Conn.DB.Save(userM).Error
 	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	return errors.Done(c)
+}
+
+// ResetPassword is a function that is used to reset the logged in users password
+func (u *User) ResetPassword(c *fiber.Ctx) error {
+	method := string(c.Request().Header.Method())
+	v := validator.New()
+
+	if method == http.MethodPatch {
+		var payload struct {
+			Email string `json:"email" validate:"required,email"`
+		}
+		if err := c.BodyParser(&payload); err != nil {
+			logger.Error(err)
+			return errors.BadRequest(c)
+		}
+		err := v.Struct(payload)
+		if err != nil {
+			logger.Error(err)
+			return errors.BadRequest(c)
+		}
+
+		var userM models.User
+		err = u.Conn.DB.Select("id", "verified", "email").Where(&models.User{
+			Email: payload.Email,
+		}).First(&userM).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.NoAccountWithEmail(c)
+			}
+			logger.Error(err)
+			return errors.InternalServerErr(c)
+		}
+
+		if !userM.Verified {
+			return errors.EmailIsNotVerified(c)
+		}
+
+		emailClient := services.Email{
+			Conn: u.Conn,
+			Env:  u.Env,
+		}
+		err = emailClient.ResetPassword(*userM.ID, userM.Email)
+		if err != nil {
+			logger.Error(err)
+			return errors.InternalServerErr(c)
+		}
+
+		return errors.Done(c)
+	}
+
+	var payload struct {
+		OTP      string `json:"otp" validate:"required,validate_otp"`
+		Password string `json:"new_password" validate:"required,min=8,max=200,validate_password"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	v.RegisterValidation("validate_otp", validate.OTP)
+	v.RegisterValidation("validate_password", validate.Password)
+	err := v.Struct(payload)
+	if err != nil {
+		logger.Error(err)
+		return errors.BadRequest(c)
+	}
+
+	val := u.Conn.R.Challenge.Get(context.Background(), payload.OTP).Val()
+	if val == "" {
+		return errors.OTPTokenExpired(c)
+	}
+
+	err = u.Conn.R.Challenge.Del(context.Background(), payload.OTP).Err()
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+	userID := uuid.MustParse(val)
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Error(err)
+		return errors.InternalServerErr(c)
+	}
+
+	err = u.Conn.DB.Model(&models.User{}).Where(&models.User{
+		ID: &userID,
+	}).Update("password", string(hashedPassword)).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.BadRequest(c)
+		}
+
 		logger.Error(err)
 		return errors.InternalServerErr(c)
 	}
