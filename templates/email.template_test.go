@@ -5,7 +5,7 @@ import (
 
 	"github.com/VinukaThejana/auth/config"
 	"github.com/VinukaThejana/auth/connect"
-	"github.com/VinukaThejana/auth/utils"
+	"github.com/VinukaThejana/auth/services"
 	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/google/uuid"
 )
@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestGetEmailConfirmationTmpl(T *testing.T) {
-	emailClient := utils.Email{
+	emailClient := services.Email{
 		Conn: &conn,
 		Env:  &env,
 	}
@@ -47,7 +47,7 @@ func TestGetEmailConfirmationTmpl(T *testing.T) {
 }
 
 func TestPasswordResetTmpl(T *testing.T) {
-	emailClient := utils.Email{
+	emailClient := services.Email{
 		Conn: &conn,
 		Env:  &env,
 	}

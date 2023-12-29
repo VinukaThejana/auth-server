@@ -129,7 +129,7 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 		}
 	}
 
-	emailClient := utils.Email{
+	emailClient := services.Email{
 		Conn: a.Conn,
 		Env:  a.Env,
 	}
