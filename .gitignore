@@ -6,3 +6,4 @@ tmp
 
 # Ignore httpie session
 session.json
+.DS_Store
