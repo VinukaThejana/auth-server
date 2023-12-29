@@ -130,12 +130,14 @@ func (a *Auth) RegisterWEmailAndPassword(c *fiber.Ctx) error {
 	}
 
 	emailClient := utils.Email{
-		Conn:   a.Conn,
-		Env:    a.Env,
-		UserID: *newUser.ID,
+		Conn: a.Conn,
+		Env:  a.Env,
 	}
 
-	emailClient.SendConfirmation(newUser.Email)
+	err = emailClient.SendConfirmation(*newUser.ID, newUser.Email)
+	if err != nil {
+		logger.Error(err)
+	}
 
 	return errors.Done(c)
 }
