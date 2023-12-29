@@ -1,0 +1,18 @@
+meta {
+  name: EditPassKeys
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/auth/passkeys/edit
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "newName": "New PassKey name",
+      "passKeyID": "xjbVkChupqE2toQHH0kRpq84IKfF8qurg433QQ95dg0"
+  }
+}

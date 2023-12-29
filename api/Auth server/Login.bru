@@ -1,0 +1,47 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "johndoe",
+    "password": "WgJHQfzjmQOrfShlSZqsKMIEbVjEADjahrHeWqJMdTlQVErBWULmmSJLyZSdwbhA"
+  }
+}
+
+tests {
+  // 
+  // pm.test("Response status code is 200", function () {
+  //     pm.expect(pm.response.code).to.equal(200);
+  // });
+  // 
+  // 
+  // pm.test("Verify that the 'status' field is a non-empty string", function () {
+  //   const responseData = pm.response.json();
+  //   
+  //   pm.expect(responseData).to.be.an('object');
+  //   pm.expect(responseData.status).to.be.a('string').and.to.have.lengthOf.at.least(1, "Value should not be empty");
+  // });
+  // 
+  // 
+  // pm.test("Verify that id field is a non-empty string", function () {
+  //     const responseData = pm.response.json();
+  //     
+  //     pm.expect(responseData.user.id).to.be.a('string').and.to.have.lengthOf.at.least(1, "Value should not be empty");
+  // });
+  // 
+  // pm.test("Verify that name field is a non-empty string", function () {
+  //     const responseData = pm.response.json();
+  //     
+  //     pm.expect(responseData.user.name).to.be.a('string').and.to.have.lengthOf.at.least(1, "Value should not be empty");
+  // });
+  // 
+}

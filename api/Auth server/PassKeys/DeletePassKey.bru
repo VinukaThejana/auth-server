@@ -1,0 +1,17 @@
+meta {
+  name: DeletePassKey
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/auth/passkeys/delete
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "passKeyID": "ELl7H2htZZR7MQSz1TdJfiLHKlLSlrZKTqI9vpGgZ38"
+  }
+}

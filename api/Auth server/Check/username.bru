@@ -1,0 +1,17 @@
+meta {
+  name: username
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/check/username
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "username": "johndoe"
+  }
+}

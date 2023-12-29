@@ -1,0 +1,17 @@
+meta {
+  name: Remove device
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/user/devices/remove
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "id": "70a3d5ea-851f-11ee-979e-e65a5f146d34"
+  }
+}

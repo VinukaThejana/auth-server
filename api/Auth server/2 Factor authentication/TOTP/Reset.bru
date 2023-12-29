@@ -1,0 +1,19 @@
+meta {
+  name: Reset
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/auth/otp/reset
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "username": "johndoe",
+      "password": "WgJHQfzjmQOrfShlSZqsKMIEbVjEADjahrHeWqJMdTlQVErBWULmmSJLyZSdwbhA",
+      "memonic_phrase": "grid about surround slot used robust soon stuff hire brother space harbor title raise hero october dinosaur during drive honey garment mind better rhythm"
+  }
+}

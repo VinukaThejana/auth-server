@@ -1,0 +1,18 @@
+meta {
+  name: Validate TOTP code and Login
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8080/auth/otp/validate
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "id": "8750fc79-7a20-4be1-9af3-a7c5255ff5cc",
+      "code": "640162"
+  }
+}
