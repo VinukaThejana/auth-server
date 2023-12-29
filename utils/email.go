@@ -11,7 +11,6 @@ import (
 	"github.com/VinukaThejana/auth/errors"
 	"github.com/VinukaThejana/auth/models"
 	"github.com/VinukaThejana/auth/templates"
-	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/google/uuid"
 	"github.com/resendlabs/resend-go"
 	"gorm.io/gorm"
@@ -30,16 +29,18 @@ type Email struct {
 }
 
 // SendConfirmation is a function that is sent to the user inorder to confirm the user email address
-func (e *Email) SendConfirmation(userID uuid.UUID, email string) {
+func (e *Email) SendConfirmation(userID uuid.UUID, email string) error {
 	token := uuid.New()
-	e.Conn.R.Email.SetNX(context.TODO(), token.String(), fmt.Sprintf("%s+%s", userID.String(), email), emailConfirmationExpirationTime)
+	err := e.Conn.R.Email.SetNX(context.TODO(), token.String(), fmt.Sprintf("%s+%s", userID.String(), email), emailConfirmationExpirationTime).Err()
+	if err != nil {
+		return err
+	}
 
 	emailTemplate, err := templates.Email{}.GetEmailConfirmationTmpl(
 		fmt.Sprintf("http://localhost:8080/email/confirmation?token=%s", token.String()),
 	)
 	if err != nil {
-		logger.Error(err)
-		return
+		return err
 	}
 
 	client := resend.NewClient(e.Env.ResendAPIKey)
@@ -50,13 +51,12 @@ func (e *Email) SendConfirmation(userID uuid.UUID, email string) {
 		Subject: "Email confirmation",
 		ReplyTo: resendReplyFrom,
 	}
-	send, err := client.Emails.Send(params)
+	_, err = client.Emails.Send(params)
 	if err != nil {
-		logger.Error(err)
-		return
+		return err
 	}
 
-	logger.Log(fmt.Sprintf("[ %s ] : Confirmation email sent", send.Id))
+	return nil
 }
 
 // ResendConfirmation is a funtion that is used to resend the confirmation email
