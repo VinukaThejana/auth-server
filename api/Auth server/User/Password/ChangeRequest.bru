@@ -1,0 +1,17 @@
+meta {
+  name: ChangeRequest
+  type: http
+  seq: 3
+}
+
+patch {
+  url: http://localhost:8080/user/password/reset
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "vinuka.t@pm.me"
+  }
+}
