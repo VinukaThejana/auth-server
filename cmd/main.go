@@ -82,7 +82,7 @@ func main() {
 		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowOrigins:     env.FrontendURL,
 		AllowCredentials: true,
-		AllowMethods:     "GET, POST, DELETE",
+		AllowMethods:     "GET, POST, DELETE, PATCH",
 	}))
 
 	app.Use(limiter.New(limiter.Config{
