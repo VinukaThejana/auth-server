@@ -108,7 +108,7 @@ func (e *Email) ResetPassword(userID uuid.UUID, email string) error {
 		From:    resendEmailFrom,
 		To:      []string{email},
 		Html:    emailTemplate,
-		Subject: "Password Reset",
+		Subject: fmt.Sprintf("[%s] Reset Password", otp),
 		ReplyTo: resendReplyFrom,
 	}
 
